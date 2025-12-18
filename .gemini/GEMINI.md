@@ -33,7 +33,6 @@
   /lib/langchain/memory/     # In-memory summary cache per session
   /components/scene/         # React Three Fiber scene + controls
   /components/chat/          # Message list, controls, HUD
-  /components/loading/       # Shared loading indicators
   /globals.css               # Global styles/theme tokens
 /public
   /assets/avatar/            # FBX meshes, textures, morph targets
