@@ -1,0 +1,52 @@
+{
+  "name": "3d-avatar-chatbot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Harry Potter themed 3D chatbot built with Next.js 16, React 19, LangChain, and HeadTTS.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run",
+    "test:watch": "vitest",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "dependencies": {
+    "@langchain/google-genai": "^0.1.6",
+    "@react-three/drei": "^9.113.0",
+    "@react-three/fiber": "^9.0.0",
+    "eventsource-parser": "^3.0.6",
+    "langchain": "^0.2.15",
+    "next": "^16.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "three": "^0.170.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@testing-library/jest-dom": "^6.4.6",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.5.1",
+    "@types/node": "^22.9.4",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.14.0",
+    "eslint-config-next": "^16.0.0",
+    "eslint-config-prettier": "^9.1.0",
+    "jsdom": "^27.3.0",
+    "postcss": "^8.4.47",
+    "prettier": "^3.2.5",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5"
+  }
+}
