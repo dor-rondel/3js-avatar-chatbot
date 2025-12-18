@@ -13,7 +13,7 @@ export default function StageCanvas() {
     <div className="gryffindor-stage">
       <Canvas
         dpr={[1, 1.5]}
-        camera={{ position: [0, 1.6, 5], fov: 45 }}
+        camera={{ position: [0, 0, 2.25], fov: 25 }}
         shadows
         style={{ width: '100%', height: '100%' }}
       >
