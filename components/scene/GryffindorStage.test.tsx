@@ -1,5 +1,6 @@
+import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { SRGBColorSpace, type Scene, type Texture } from 'three';
 import GryffindorStage from './GryffindorStage';
 import { useTexture } from '@react-three/drei';
@@ -16,6 +17,14 @@ vi.mock('@react-three/fiber', () => ({
 
 vi.mock('@react-three/drei', () => ({
   useTexture: vi.fn(),
+  Stage: ({ children }: { children: ReactNode }) => (
+    <div data-testid="drei-stage">{children}</div>
+  ),
+}));
+
+vi.mock('./HarryAvatar', () => ({
+  __esModule: true,
+  default: () => <div data-testid="harry-avatar">avatar</div>,
 }));
 
 describe('GryffindorStage', () => {
@@ -37,6 +46,8 @@ describe('GryffindorStage', () => {
     expect(sourceTexture.clone).toHaveBeenCalledTimes(1);
     expect(preparedTexture.colorSpace).toBe(SRGBColorSpace);
     expect(mockScene.background).toBe(preparedTexture);
+    expect(screen.getByTestId('drei-stage')).toBeInTheDocument();
+    expect(screen.getByTestId('harry-avatar')).toBeInTheDocument();
 
     unmount();
 

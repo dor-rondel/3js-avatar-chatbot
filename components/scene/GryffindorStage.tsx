@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
-import { useTexture } from '@react-three/drei';
+import { Stage, useTexture } from '@react-three/drei';
 import { SRGBColorSpace, type Texture, type Scene } from 'three';
+import HarryAvatar from './HarryAvatar';
 
 /**
  * Applies the Gryffindor backdrop texture and lighting rig to the shared scene.
@@ -53,6 +54,15 @@ export default function GryffindorStage() {
         position={[4, 6, 2]}
         castShadow
       />
+      <Stage
+        environment="city"
+        preset="rembrandt"
+        intensity={0.9}
+        adjustCamera={false}
+        contactShadow
+      >
+        <HarryAvatar scale={1.05} position={[0, 0.85, 0]} />
+      </Stage>
     </>
   );
 }
