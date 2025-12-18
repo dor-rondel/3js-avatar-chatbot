@@ -25,7 +25,7 @@
 
 ```
 /app                         # Next.js 15 App Router code
-  /page.tsx           # Chat UI + 3D scene shell
+  /page.tsx                  # Chat UI + 3D scene shell
   /layout.tsx                # SEO metadata + shared providers
   /api/chat/route.ts         # SSE chat endpoint (LangChain + Gemini)
   /api/headtts/route.ts      # HeadTTS proxy handler (audio + visemes)
@@ -34,7 +34,7 @@
   /components/scene/         # React Three Fiber scene + controls
   /components/chat/          # Message list, controls, HUD
   /components/loading/       # Shared loading indicators
-  /globals.css                   # Global styles/theme tokens
+  /globals.css               # Global styles/theme tokens
 /public
   /assets/avatar/            # FBX meshes, textures, morph targets
 .gemini/GEMINI.md            # This file
@@ -104,11 +104,14 @@ _Add more entries (e.g., asset CDN URLs) as the project evolves._
 ## 5. Running Locally (Docker-first)
 
 1. **Start services**
+
    ```bash
    docker compose up -d
    ```
+
    - Compose should bring up the Next.js app server and the HeadTTS container.
    - Ensure the Next.js service loads environment variables defined above.
+
 2. **Tail logs when needed**
    ```bash
    docker compose logs -f app
