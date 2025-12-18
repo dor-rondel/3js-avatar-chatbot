@@ -9,7 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        hogwarts: {
+        gryffindor: {
           midnight: '#05030c',
           gold: '#f6c667',
           emerald: '#1e6f5c',

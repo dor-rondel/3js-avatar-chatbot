@@ -4,11 +4,65 @@
   color-scheme: dark;
 }
 
+html,
 body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
   font-family:
     'Space Grotesk',
     'Segoe UI',
     system-ui,
     -apple-system,
     sans-serif;
+  background-color: #05030c;
+}
+
+.gryffindor-stage {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  border-radius: 0;
+  border: none;
+  background: radial-gradient(circle at 20% 20%, #1c1530, #05030c 70%);
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.gryffindor-stage canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.loading-indicator {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: rgba(5, 3, 12, 0.8);
+  color: #cbd5f5;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.loading-ring {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #f6c667;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
