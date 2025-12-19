@@ -58,7 +58,7 @@ export function ChatInput({ placeholder, onSend }: ChatInputProps) {
         void sendMessage();
       }
     },
-    [sendMessage],
+    [sendMessage]
   );
 
   return (

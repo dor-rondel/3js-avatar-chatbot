@@ -1,5 +1,11 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { ChatPanel } from './ChatPanel';
 
 describe('ChatPanel', () => {
@@ -17,9 +23,11 @@ describe('ChatPanel', () => {
     render(<ChatPanel />);
 
     expect(
-      screen.getByText('Send Harry a message and he will respond in audio.'),
+      screen.getByText('Send Harry a message and he will respond in audio.')
     ).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/Ask Harry anything/)).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText(/Ask Harry anything/)
+    ).toBeInTheDocument();
   });
 
   it('forwards user text to the backend queue when sending', async () => {
@@ -37,7 +45,10 @@ describe('ChatPanel', () => {
     });
 
     await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith('Queued TTS request:', 'Wingardium Leviosa');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Queued TTS request:',
+        'Wingardium Leviosa'
+      );
     });
   });
 });
