@@ -1,22 +1,62 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
-import { useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { Stage, useTexture } from '@react-three/drei';
-import { SRGBColorSpace, type Texture, type Scene } from 'three';
+import { SRGBColorSpace, type Texture, type Scene, type Group } from 'three';
 import HarryAvatar from './HarryAvatar';
 
 /**
  * Applies the Gryffindor backdrop texture and lighting rig to the shared scene.
+ * Controls avatar auto-rotation via shouldSpin prop (enabled when zoomed out).
  */
-export default function GryffindorStage() {
+type GryffindorStageProps = {
+  /** When true, avatar spins continuously around Y-axis at origin. */
+  shouldSpin?: boolean;
+};
+
+const SPIN_SPEED = 0.35;
+
+export default function GryffindorStage({
+  shouldSpin = false,
+}: GryffindorStageProps) {
   const scene = useThree((state) => state.scene);
   const sceneRef = useRef<Scene | null>(scene);
+  const avatarGroupRef = useRef<Group | null>(null);
+  /** Ref tracks spin state so useFrame reads latest value without re-registering. */
+  const spinStateRef = useRef(shouldSpin);
   const texture = useTexture('/assets/textures/Gryffindor.jpg') as Texture;
 
   useEffect(() => {
     sceneRef.current = scene;
   }, [scene]);
+
+  useEffect(() => {
+    spinStateRef.current = shouldSpin;
+    const avatarGroup = avatarGroupRef.current;
+    // Reset rotation when spin disabled so avatar faces forward.
+    if (!shouldSpin && avatarGroup?.rotation) {
+      // eslint-disable-next-line id-length
+      avatarGroup.rotation.y = 0;
+    }
+  }, [shouldSpin]);
+
+  // eslint-disable-next-line id-length
+  useFrame((_, delta) => {
+    const avatarGroup = avatarGroupRef.current;
+    if (!avatarGroup || !avatarGroup.rotation) {
+      return;
+    }
+
+    if (!spinStateRef.current) {
+      return;
+    }
+
+    // Continuous Y-axis rotation anchored at origin.
+    // eslint-disable-next-line id-length
+    avatarGroup.rotation.y =
+      (avatarGroup.rotation.y + delta * SPIN_SPEED) % (Math.PI * 2);
+  });
 
   const preparedTexture = useMemo(() => {
     if (!texture) {
@@ -61,7 +101,9 @@ export default function GryffindorStage() {
         adjustCamera={false}
         contactShadow
       >
-        <HarryAvatar scale={1.05} position={[0, 0.75, 1.25]} />
+        <group ref={avatarGroupRef} position={[0, 0, 0]}>
+          <HarryAvatar scale={1.05} position={[0, 0.75, 0]} />
+        </group>
       </Stage>
     </>
   );

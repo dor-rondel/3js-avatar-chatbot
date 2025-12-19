@@ -7,11 +7,18 @@ import { useTexture } from '@react-three/drei';
 
 const mockScene = { background: null } as unknown as Scene;
 
+const { mockUseFrame } = vi.hoisted(() => ({
+  mockUseFrame: vi.fn(),
+}));
+
 vi.mock('@react-three/fiber', () => ({
   // eslint-disable-next-line no-unused-vars
   useThree: (selector?: (state: { scene: Scene }) => unknown) => {
     const state = { scene: mockScene };
     return selector ? selector(state) : state;
+  },
+  useFrame: (fn: () => void) => {
+    mockUseFrame(fn);
   },
 }));
 
@@ -48,6 +55,8 @@ describe('GryffindorStage', () => {
     expect(mockScene.background).toBe(preparedTexture);
     expect(screen.getByTestId('drei-stage')).toBeInTheDocument();
     expect(screen.getByTestId('harry-avatar')).toBeInTheDocument();
+    expect(mockUseFrame).toHaveBeenCalledTimes(1);
+    expect(mockUseFrame.mock.calls[0]?.[0]).toBeInstanceOf(Function);
 
     unmount();
 
