@@ -6,7 +6,7 @@ export default function HomePage() {
     <main className="min-h-screen w-screen">
       <Suspense
         fallback={
-          <div className="gryffindor-stage flex items-center justify-center text-sm text-slate-400">
+          <div className="flex h-screen w-screen items-center justify-center bg-[radial-gradient(circle_at_20%_20%,#1c1530,#05030c_70%)] text-sm text-slate-400">
             Summoning the Gryffindor stage...
           </div>
         }

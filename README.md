@@ -15,7 +15,7 @@ A Harry Potter–themed conversational agent that renders a fully animated 3D av
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router, full-stack)
+- **Framework**: Next.js 16 (App Router, full-stack)
 - **Language**: TypeScript (strict)
 - **3D Rendering**: React Three Fiber + Drei
 - **LLM Orchestration**: LangChain w/ Gemini API, Prompts, and Memory

@@ -24,7 +24,7 @@
 ## 2. Planned Repository Layout
 
 ```
-/app                         # Next.js 15 App Router code
+/app                         # Next.js 16 App Router code
   /page.tsx                  # Chat UI + 3D scene shell
   /layout.tsx                # SEO metadata + shared providers
   /api/chat/route.ts         # SSE chat endpoint (LangChain + Gemini)
