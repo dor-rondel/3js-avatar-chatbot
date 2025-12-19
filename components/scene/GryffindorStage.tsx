@@ -61,7 +61,7 @@ export default function GryffindorStage() {
         adjustCamera={false}
         contactShadow
       >
-        <HarryAvatar scale={1.05} position={[0, 0.85, 0]} />
+        <HarryAvatar scale={1.05} position={[0, 0.75, 1.25]} />
       </Stage>
     </>
   );
