@@ -28,6 +28,7 @@ export function ChatInput({ placeholder, onSend }: ChatInputProps) {
       return;
     }
 
+    // Reset height then expand to fit content (mimic auto-grow).
     textarea.style.height = 'auto';
     textarea.style.height = `${textarea.scrollHeight}px`;
   }, []);

@@ -1,9 +1,15 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, type HTMLAttributes } from 'react';
 import { ChatInput } from './ChatInput';
 
-export function ChatPanel() {
+type ChatPanelProps = Omit<HTMLAttributes<HTMLElement>, 'children'>;
+
+/**
+ * Renders the floating chat panel overlay that collects user prompts for Harry.
+ * Currently front-end only; it forwards messages to the eventual TTS pipeline via `handleSend`.
+ */
+export function ChatPanel(sectionProps: ChatPanelProps = {}) {
   const handleSend = useCallback(async (text: string) => {
     // Backend wiring will store and process the full transcript.
     // eslint-disable-next-line no-console
@@ -12,8 +18,9 @@ export function ChatPanel() {
 
   return (
     <section
-      className="pointer-events-auto w-full max-w-xl rounded-3xl border border-white/15 bg-slate-950/80 p-6 shadow-2xl backdrop-blur-3xl"
+      {...sectionProps}
       aria-label="Talk with Harry"
+      className="pointer-events-auto w-full max-w-xl rounded-3xl border border-white/15 bg-slate-950/80 p-6 shadow-2xl backdrop-blur-3xl"
     >
       <header className="mb-4 text-center">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-200/80">
