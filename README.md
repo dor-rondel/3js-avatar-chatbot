@@ -101,7 +101,7 @@ Once the container is healthy, visit http://localhost:3000. Stop the stack with 
 
 ## Publishing to GHCR
 
-This repo ships a `docker-publish` GitHub Action that builds the Dockerfile and pushes tags to `ghcr.io`. It runs automatically on every push to `main`, and you can trigger it manually via *Run workflow* in the Actions tab. The workflow:
+This repo ships a `docker-publish` GitHub Action that builds the Dockerfile and pushes tags to `ghcr.io`. It runs automatically on every push to `main`, and you can trigger it manually via _Run workflow_ in the Actions tab. The workflow:
 
 1. Logs in to `ghcr.io` using the built-in `GITHUB_TOKEN` (already granted `packages: write`).
 2. Derives the image name `ghcr.io/<owner>/<repo>` in lowercase.
