@@ -2,15 +2,15 @@
 
 ## Overview
 
-A Harry Potter–themed conversational agent that renders a fully animated 3D avatar in the browser using React Three Fiber. Users submit a prompt once per turn, the backend streams responses over Server-Sent Events (SSE), and the avatar mirrors the assistant’s sentiment with facial expressions, FBX animations, and HeadTTS-generated audio. The experience targets a single user at a time, emphasizing cinematic presentation, observability, and professional engineering practices.
+A Harry Potter–themed conversational agent that renders a fully animated 3D avatar in the browser using React Three Fiber. Users submit a prompt once per turn, the backend returns a single JSON payload for that turn, and the avatar mirrors the assistant’s sentiment with facial expressions, FBX animations, and ElevenLabs streaming audio whose visemes are derived in-browser via the wawa-lipsync Web Audio pipeline. The experience targets a single user at a time, emphasizing cinematic presentation, observability, and professional engineering practices.
 
 ## Features
 
 - Cinematic 3D avatar with zoom controls, sentiment-driven facial blends, and FBX idle/talking loops.
 - LangChain pipeline that calls Gemini for structured outputs (text, sentiment, viseme hints) with short-lived memory.
 - Guardrail layer that sanitizes prompts and blocks common prompt-injection attempts before invoking Gemini.
-- HeadTTS Next.js route handler that returns synchronized viseme timelines and audio clips.
-- SSE chat endpoint so the frontend receives streaming tokens plus animation cues.
+- ElevenLabs streaming route handler plus a client-side [wawa-lipsync](https://github.com/wass08/wawa-lipsync) harness that taps a browser `AnalyserNode` for real-time viseme cues.
+- Low-latency chat endpoint that returns a complete assistant turn (text, sentiment, viseme hints) for each POST so ElevenLabs can synthesize audio without waiting on SSE token streams.
 - LangSmith tracing wired through Docker for end-to-end observability.
 - Built-in loading states, SEO-ready layout, and Vitest coverage.
 
@@ -20,7 +20,7 @@ A Harry Potter–themed conversational agent that renders a fully animated 3D av
 - **Language**: TypeScript (strict)
 - **3D Rendering**: React Three Fiber + Drei
 - **LLM Orchestration**: LangChain w/ Gemini API, Prompts, and Memory
-- **Speech & Visemes**: HeadTTS via Next.js route handler
+- **Speech & Visemes**: ElevenLabs API + browser-based wawa-lipsync
 - **Styling**: Tailwind CSS + custom Hogwarts-inspired design tokens
 - **Testing**: Vitest + React Testing Library
 - **Observability**: LangSmith tracing
@@ -34,7 +34,8 @@ A Harry Potter–themed conversational agent that renders a fully animated 3D av
 - pnpm
 - Gemini API key
 - LangSmith API key + project
-- (Optional) Access to a HeadTTS instance or Docker image
+- ElevenLabs API key plus a configured voice profile (Realtime or streaming HTTP)
+- Browser support for Web Audio (`AnalyserNode`) so wawa-lipsync can derive visemes client-side
 
 ### Installation
 
@@ -62,8 +63,9 @@ A Harry Potter–themed conversational agent that renders a fully animated 3D av
    LANGSMITH_ENDPOINT=https://api.langsmith.com
    LANGSMITH_PROJECT=harry-potter-3d-chatbot
    LANGCHAIN_TRACING_V2=true
-   HEADTTS_BASE_URL=http://localhost:8000
-   HEADTTS_VOICE_ID=holo-hp
+   ELEVENLABS_API_KEY=your-elevenlabs-key
+   ELEVENLABS_VOICE_ID=hermione-realism
+   ELEVENLABS_MODEL_ID=eleven_monolingual_v1
    NEXT_PUBLIC_SSE_ENDPOINT=/api/chat
    NEXT_PUBLIC_LOADING_DELAY_MS=350
    ```
@@ -74,7 +76,24 @@ A Harry Potter–themed conversational agent that renders a fully animated 3D av
 pnpm dev
 ```
 
-Open http://localhost:3000 to access the chat UI. Each prompt triggers an SSE stream; keep the tab open until the avatar completes its response.
+Open http://localhost:3000 to access the chat UI. Each prompt triggers a single POST, the server responds once with the full assistant turn, and that text is immediately forwarded to ElevenLabs for audio generation (audio streaming to the browser can happen afterward).
+
+## Docker
+
+Build a production image and run it the same way you would on a server:
+
+```bash
+docker build -t 3d-avatar-chatbot .
+docker run --rm -p 3000:3000 --env-file .env.local 3d-avatar-chatbot
+```
+
+For iterative work, rely on the included Compose file (uses `.env.local` automatically):
+
+```bash
+docker compose up --build
+```
+
+Once the container is healthy, visit http://localhost:3000. Stop the stack with `docker compose down`.
 
 ## Available Scripts
 
@@ -87,4 +106,4 @@ Open http://localhost:3000 to access the chat UI. Each prompt triggers an SSE st
 - `pnpm format`: Format files with Prettier.
 - `pnpm format:check`: Verify formatting (used in CI).
 
-For a full project playbook (Docker, SSE expectations, testing standards), see .gemini/GEMINI.md.
+For a full project playbook (Docker, chat/voice expectations, testing standards), see .gemini/GEMINI.md.
