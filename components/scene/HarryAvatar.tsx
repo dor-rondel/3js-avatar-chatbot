@@ -46,12 +46,40 @@ type GLTFResult = GLTF & {
 type GroupProps = JSX.IntrinsicElements['group'];
 
 const GLB_PATH = '/assets/meshes/harry.glb';
+const EXPRESSION_INTENSITY = 1.25;
 
-function applyMorphTargetInfluences(
-  mesh: SkinnedMesh,
-  values: number[]
+/**
+ * Applies the current preset to a mesh that exposes compatible morph targets.
+ */
+function blendExpressionPreset(
+  mesh: SkinnedMesh | undefined,
+  targets: FacialExpressionPreset,
+  lerpAmount: number
 ) {
-  mesh.morphTargetInfluences = values;
+  if (!mesh) {
+    return;
+  }
+
+  const dictionary = mesh.morphTargetDictionary;
+  const influences = mesh.morphTargetInfluences;
+  if (!dictionary || !influences) {
+    return;
+  }
+
+  for (const morphName of expressionMorphNames) {
+    const targetIndex = dictionary[morphName];
+    if (typeof targetIndex !== 'number') {
+      continue;
+    }
+
+    const targetValue = Math.min(
+      1,
+      Math.max(0, (targets[morphName] ?? 0) * EXPRESSION_INTENSITY)
+    );
+    const currentValue = influences[targetIndex] ?? 0;
+    const nextValue = currentValue + (targetValue - currentValue) * lerpAmount;
+    influences[targetIndex] = nextValue;
+  }
 }
 
 /**
@@ -65,41 +93,6 @@ export default function HarryAvatar(props: GroupProps) {
   const expressionPresetRef = useRef<FacialExpressionPreset>(
     facialExpressions.default
   );
-
-  /**
-   * Developer helper: log every mesh's morph targets so we know which viseme names are available.
-   */
-  useEffect(() => {
-    const meshes: Array<[string, SkinnedMesh | undefined]> = [
-      ['Wolf3D_Head', nodes.Wolf3D_Head],
-      ['Wolf3D_Teeth', nodes.Wolf3D_Teeth],
-    ];
-
-    meshes.forEach(([label, mesh]) => {
-      const dict = mesh?.morphTargetDictionary;
-      const influences = mesh?.morphTargetInfluences;
-      if (!dict || !influences) {
-        return;
-      }
-
-      const rows = Object.entries(dict).map(([target, index]) => ({
-        target,
-        index,
-        influence: influences[index] ?? 0,
-      }));
-
-      if (!rows.length) {
-        return;
-      }
-
-      // eslint-disable-next-line no-console
-      console.groupCollapsed(`[morphTargets] ${label}`);
-      // eslint-disable-next-line no-console
-      console.table(rows);
-      // eslint-disable-next-line no-console
-      console.groupEnd();
-    });
-  }, [nodes]);
 
   /**
    * Start listening for viseme events so the Three.js render loop can react in real time.
@@ -134,15 +127,14 @@ export default function HarryAvatar(props: GroupProps) {
    * Every frame: decay all morph influences toward zero, optionally snap to silence,
    * then boost the morph target matching the most recent viseme tag.
    */
+  /* eslint-disable react-hooks/immutability */
   useFrame((_state, delta) => {
     const headMesh = nodes.Wolf3D_Head;
     const dictionary = headMesh.morphTargetDictionary;
-    const baseInfluences = headMesh.morphTargetInfluences;
-    if (!dictionary || !baseInfluences) {
+    const influences = headMesh.morphTargetInfluences;
+    if (!dictionary || !influences) {
       return;
     }
-
-    const influences = Array.from(baseInfluences);
 
     const damping = Math.exp(-delta * 18);
     for (let index = 0; index < influences.length; index += 1) {
@@ -168,28 +160,16 @@ export default function HarryAvatar(props: GroupProps) {
       }
     }
 
-    if (snappedToSilence) {
-      applyMorphTargetInfluences(headMesh, influences);
-      return;
-    }
-
     const expressionTargets = expressionPresetRef.current;
     const expressionLerp = 1 - Math.exp(-delta * 6);
-    for (const morphName of expressionMorphNames) {
-      const targetIndex = dictionary[morphName];
-      if (typeof targetIndex !== 'number') {
-        continue;
-      }
-
-      const targetValue = expressionTargets[morphName] ?? 0;
-      const currentValue = influences[targetIndex] ?? 0;
-      const nextValue =
-        currentValue + (targetValue - currentValue) * expressionLerp;
-      influences[targetIndex] = nextValue;
-    }
-
-    applyMorphTargetInfluences(headMesh, influences);
+    blendExpressionPreset(headMesh, expressionTargets, expressionLerp);
+    blendExpressionPreset(
+      nodes.Wolf3D_Teeth,
+      expressionTargets,
+      expressionLerp
+    );
   });
+  /* eslint-enable react-hooks/immutability */
 
   return (
     <group {...props} dispose={null}>

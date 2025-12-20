@@ -78,7 +78,7 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
 
   /**
    * Kicks off a `requestAnimationFrame` loop that polls lipsync visemes
-   * while audio is playing and logs transitions for debugging.
+   * while audio is playing and forwards them to the scene.
    */
   const startVisemeLoop = useCallback(
     (audioElement: HTMLAudioElement) => {
@@ -96,9 +96,6 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
         const currentViseme = manager.viseme;
         if (currentViseme && currentViseme !== lastVisemeRef.current) {
           lastVisemeRef.current = currentViseme;
-          const timestamp = audioElement.currentTime?.toFixed(2) ?? '0.00';
-          // eslint-disable-next-line no-console
-          console.info('[viseme]', currentViseme, '@', `${timestamp}s`);
           emitViseme({
             label: currentViseme,
             timestamp: audioElement.currentTime ?? 0,
@@ -140,12 +137,10 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
   const handleSend = useCallback(
     async (text: string) => {
       try {
-        const { reply, audio, sentiment } = await sendChatRequest(text);
+        const { audio, sentiment } = await sendChatRequest(text);
         const element = getAudioElement();
 
         if (!element) {
-          // eslint-disable-next-line no-console
-          console.warn('Audio playback is not supported in this browser.');
           return;
         }
 
@@ -179,9 +174,6 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
         };
 
         await element.play();
-
-        // eslint-disable-next-line no-console
-        console.info('Harry replied:', reply);
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Chat request failed:', error);
