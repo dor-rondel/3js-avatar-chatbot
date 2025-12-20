@@ -32,6 +32,7 @@
 /lib/langchain/             # Prompt templates, memory helpers
 /lib/langchain/memory/      # In-memory summary cache per session
 /lib/voice/                 # ElevenLabs integration helpers
+/lib/audio/                 # Client-side audio utilities (decode, playback hooks)
 /components/scene/          # React Three Fiber scene + controls
 /components/chat/           # Message list, controls, HUD
 /globals.css                # Global styles/theme tokens

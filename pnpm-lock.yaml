@@ -40,6 +40,9 @@ importers:
       three-stdlib:
         specifier: ^2.36.1
         version: 2.36.1(three@0.170.0)
+      wawa-lipsync:
+        specifier: ^0.0.2
+        version: 0.0.2
       zod:
         specifier: ^3.23.8
         version: 3.25.76
@@ -5167,6 +5170,12 @@ packages:
       }
     engines: { node: '>=18' }
 
+  wawa-lipsync@0.0.2:
+    resolution:
+      {
+        integrity: sha512-aW4vKMOBRsv2RnPugzB0fF0ln1ni3kE3INks9xxeQ8+RnL6uZZzenzn/dwdwji8BBD8IboJBatFj/WkoyyYaew==,
+      }
+
   web-streams-polyfill@4.0.0-beta.3:
     resolution:
       {
@@ -8503,6 +8512,8 @@ snapshots:
   w3c-xmlserializer@5.0.0:
     dependencies:
       xml-name-validator: 5.0.0
+
+  wawa-lipsync@0.0.2: {}
 
   web-streams-polyfill@4.0.0-beta.3: {}
 
