@@ -7,6 +7,7 @@ const {
   InputSanitizationError,
   ConfigurationError,
   GeminiResponseError,
+  SummaryMemoryError,
   synthesizeSpeechMock,
   ElevenLabsConfigurationError,
   ElevenLabsSynthesisError,
@@ -14,6 +15,7 @@ const {
   class InputSanitizationError extends Error {}
   class ConfigurationError extends Error {}
   class GeminiResponseError extends Error {}
+  class SummaryMemoryError extends Error {}
   class ElevenLabsConfigurationError extends Error {}
   class ElevenLabsSynthesisError extends Error {}
 
@@ -23,6 +25,7 @@ const {
     InputSanitizationError,
     ConfigurationError,
     GeminiResponseError,
+    SummaryMemoryError,
     ElevenLabsConfigurationError,
     ElevenLabsSynthesisError,
   };
@@ -33,6 +36,7 @@ vi.mock('../../../lib/langchain/executeChat', () => ({
   InputSanitizationError,
   ConfigurationError,
   GeminiResponseError,
+  SummaryMemoryError,
 }));
 
 vi.mock('../../../lib/voice/synthesizeWithElevenLabs', () => ({
@@ -188,6 +192,22 @@ describe('POST /api/chat', () => {
 
     expect(response.status).toBe(502);
     await expect(response.json()).resolves.toEqual({ error: 'Quota exceeded' });
+  });
+
+  it('maps summary memory issues to 502', async () => {
+    executeChatMock.mockRejectedValueOnce(
+      new SummaryMemoryError('Summary failed')
+    );
+
+    const response = await POST(
+      new Request('http://localhost/api/chat', {
+        method: 'POST',
+        body: JSON.stringify({ message: 'hello' }),
+      })
+    );
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toEqual({ error: 'Summary failed' });
   });
 
   it('falls back to a generic message on unexpected errors', async () => {

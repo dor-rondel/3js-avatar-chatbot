@@ -3,6 +3,7 @@ import {
   ConfigurationError,
   GeminiResponseError,
   InputSanitizationError,
+  SummaryMemoryError,
   executeChat,
 } from '../../../lib/langchain/executeChat';
 import {
@@ -16,7 +17,6 @@ const GENERIC_ERROR_MESSAGE =
 
 type ChatRequestPayload = {
   message?: unknown;
-  summary?: string;
 };
 
 /**
@@ -43,7 +43,6 @@ export async function POST(request: Request) {
   try {
     const result = await executeChat({
       message: payload.message,
-      summary: payload.summary,
     });
 
     const audio = await synthesizeSpeech({ text: result.reply });
@@ -67,7 +66,8 @@ export async function POST(request: Request) {
 
     if (
       error instanceof GeminiResponseError ||
-      error instanceof ElevenLabsSynthesisError
+      error instanceof ElevenLabsSynthesisError ||
+      error instanceof SummaryMemoryError
     ) {
       return NextResponse.json({ error: error.message }, { status: 502 });
     }
