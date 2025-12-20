@@ -76,6 +76,23 @@ function resolveClipForExpression(
     : null;
 }
 
+function prepareAnimationClip(
+  source: AnimationClip | undefined,
+  name: AnimationClipName
+): AnimationClip | null {
+  if (!source) {
+    return null;
+  }
+
+  const sanitized = source.clone();
+  sanitized.name = name;
+  sanitized.tracks = sanitized.tracks.filter((track) => {
+    const property = track.name.split('.').pop();
+    return property !== 'position' && property !== 'scale';
+  });
+  return sanitized;
+}
+
 /**
  * Applies the current preset to a mesh that exposes compatible morph targets.
  */
@@ -145,12 +162,10 @@ export default function HarryAvatar(props: GroupProps) {
     ];
 
     return entries.reduce<AnimationClip[]>((clips, [name, clip]) => {
-      if (!clip) {
-        return clips;
+      const sanitized = prepareAnimationClip(clip, name);
+      if (sanitized) {
+        clips.push(sanitized);
       }
-
-      clip.name = name;
-      clips.push(clip);
       return clips;
     }, []);
   }, [smileFbx, laughFbx, sadFbx, surprisedFbx, angryFbx, crazyFbx, wavingFbx]);
