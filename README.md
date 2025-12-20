@@ -8,6 +8,7 @@ A Harry Potter–themed conversational agent that renders a fully animated 3D av
 
 - Cinematic 3D avatar with zoom controls, sentiment-driven facial blends, and FBX idle/talking loops.
 - LangChain pipeline that calls Gemini for structured outputs (text, sentiment, viseme hints) with short-lived memory.
+- Guardrail layer that sanitizes prompts and blocks common prompt-injection attempts before invoking Gemini.
 - HeadTTS Next.js route handler that returns synchronized viseme timelines and audio clips.
 - SSE chat endpoint so the frontend receives streaming tokens plus animation cues.
 - LangSmith tracing wired through Docker for end-to-end observability.
@@ -51,14 +52,20 @@ A Harry Potter–themed conversational agent that renders a fully animated 3D av
    ```
 4. Copy the example environment file:
    ```bash
-   cp .env.example .env.local
+   cp .env.local.example .env.local
    ```
 5. Populate secrets in `.env.local` (example):
    ```
    GEMINI_API_KEY=your-gemini-key
+   GEMINI_MODEL=gemini-2.5-flash
    LANGSMITH_API_KEY=your-langsmith-key
-   LANGSMITH_PROJECT=hp-3d-chatbot
+   LANGSMITH_ENDPOINT=https://api.langsmith.com
+   LANGSMITH_PROJECT=harry-potter-3d-chatbot
+   LANGCHAIN_TRACING_V2=true
    HEADTTS_BASE_URL=http://localhost:8000
+   HEADTTS_VOICE_ID=holo-hp
+   NEXT_PUBLIC_SSE_ENDPOINT=/api/chat
+   NEXT_PUBLIC_LOADING_DELAY_MS=350
    ```
 
 ### Running the Development Server
@@ -68,6 +75,14 @@ pnpm dev
 ```
 
 Open http://localhost:3000 to access the chat UI. Each prompt triggers an SSE stream; keep the tab open until the avatar completes its response.
+
+### Chat API (work in progress)
+
+- `POST /api/chat`
+  - Request body: `{ "message": string }`
+  - Response body (temporary non-SSE): `{ "reply": string }`
+  - The handler sanitizes user input with prompt-injection heuristics, records LangSmith traces under the fixed `harry-potter-3d-chatbot` project, and fans out to the Gemini model configured via `GEMINI_MODEL` (defaults to Flash 2.5).
+  - Future updates will upgrade this endpoint to Server-Sent Events and integrate memory plus HeadTTS cues.
 
 ## Available Scripts
 
