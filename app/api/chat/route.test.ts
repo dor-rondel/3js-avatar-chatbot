@@ -1,5 +1,5 @@
 /* eslint-disable new-cap */
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { POST } from './route';
 
 const {
@@ -7,16 +7,24 @@ const {
   InputSanitizationError,
   ConfigurationError,
   GeminiResponseError,
+  synthesizeSpeechMock,
+  ElevenLabsConfigurationError,
+  ElevenLabsSynthesisError,
 } = vi.hoisted(() => {
   class InputSanitizationError extends Error {}
   class ConfigurationError extends Error {}
   class GeminiResponseError extends Error {}
+  class ElevenLabsConfigurationError extends Error {}
+  class ElevenLabsSynthesisError extends Error {}
 
   return {
     executeChatMock: vi.fn(),
+    synthesizeSpeechMock: vi.fn(),
     InputSanitizationError,
     ConfigurationError,
     GeminiResponseError,
+    ElevenLabsConfigurationError,
+    ElevenLabsSynthesisError,
   };
 });
 
@@ -27,9 +35,24 @@ vi.mock('../../../lib/langchain/executeChat', () => ({
   GeminiResponseError,
 }));
 
+vi.mock('../../../lib/voice/synthesizeWithElevenLabs', () => ({
+  synthesizeSpeech: synthesizeSpeechMock,
+  ElevenLabsConfigurationError,
+  ElevenLabsSynthesisError,
+}));
+
 describe('POST /api/chat', () => {
+  beforeEach(() => {
+    executeChatMock.mockReset();
+    synthesizeSpeechMock.mockReset();
+  });
+
   it('returns the Gemini reply when the payload is valid', async () => {
     executeChatMock.mockResolvedValueOnce({ reply: 'Hi there' });
+    synthesizeSpeechMock.mockResolvedValueOnce({
+      base64: 'abc',
+      mimeType: 'audio/mpeg',
+    });
 
     const response = await POST(
       new Request('http://localhost/api/chat', {
@@ -39,7 +62,10 @@ describe('POST /api/chat', () => {
     );
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ reply: 'Hi there' });
+    await expect(response.json()).resolves.toEqual({
+      reply: 'Hi there',
+      audio: { base64: 'abc', mimeType: 'audio/mpeg' },
+    });
   });
 
   it('rejects malformed JSON payloads', async () => {
@@ -116,6 +142,42 @@ describe('POST /api/chat', () => {
 
     expect(response.status).toBe(502);
     await expect(response.json()).resolves.toEqual({ error: 'Empty response' });
+  });
+
+  it('surfaces ElevenLabs configuration problems', async () => {
+    executeChatMock.mockResolvedValueOnce({ reply: 'Hi there' });
+    synthesizeSpeechMock.mockRejectedValueOnce(
+      new ElevenLabsConfigurationError('Missing ElevenLabs key')
+    );
+
+    const response = await POST(
+      new Request('http://localhost/api/chat', {
+        method: 'POST',
+        body: JSON.stringify({ message: 'hello' }),
+      })
+    );
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: 'Missing ElevenLabs key',
+    });
+  });
+
+  it('maps ElevenLabs synthesis issues to 502', async () => {
+    executeChatMock.mockResolvedValueOnce({ reply: 'Hi there' });
+    synthesizeSpeechMock.mockRejectedValueOnce(
+      new ElevenLabsSynthesisError('Quota exceeded')
+    );
+
+    const response = await POST(
+      new Request('http://localhost/api/chat', {
+        method: 'POST',
+        body: JSON.stringify({ message: 'hello' }),
+      })
+    );
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toEqual({ error: 'Quota exceeded' });
   });
 
   it('falls back to a generic message on unexpected errors', async () => {

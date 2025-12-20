@@ -10,7 +10,7 @@ A Harry Potter–themed conversational agent that renders a fully animated 3D av
 - LangChain pipeline that calls Gemini for structured outputs (text, sentiment, viseme hints) with short-lived memory.
 - Guardrail layer that sanitizes prompts and blocks common prompt-injection attempts before invoking Gemini.
 - ElevenLabs streaming route handler plus a client-side [wawa-lipsync](https://github.com/wass08/wawa-lipsync) harness that taps a browser `AnalyserNode` for real-time viseme cues.
-- Low-latency chat endpoint that returns a complete assistant turn (text, sentiment, viseme hints) for each POST so ElevenLabs can synthesize audio without waiting on SSE token streams.
+- Low-latency chat endpoint that returns the full assistant turn plus a base64 ElevenLabs audio payload for each POST, allowing the browser to kick off playback and wawa-lipsync without SSE token streams.
 - LangSmith tracing wired through Docker for end-to-end observability.
 - Built-in loading states, SEO-ready layout, and Vitest coverage.
 
@@ -76,7 +76,7 @@ A Harry Potter–themed conversational agent that renders a fully animated 3D av
 pnpm dev
 ```
 
-Open http://localhost:3000 to access the chat UI. Each prompt triggers a single POST, the server responds once with the full assistant turn, and that text is immediately forwarded to ElevenLabs for audio generation (audio streaming to the browser can happen afterward).
+Open http://localhost:3000 to access the chat UI. Each prompt triggers a single POST, the server responds once with the full assistant turn, and the payload already includes the synthesized ElevenLabs audio (base64 + MIME type) so the browser can start playback immediately.
 
 ## Docker
 

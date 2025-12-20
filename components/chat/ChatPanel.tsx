@@ -13,9 +13,11 @@ type ChatPanelProps = Omit<HTMLAttributes<HTMLElement>, 'children'>;
 export function ChatPanel(sectionProps: ChatPanelProps = {}) {
   const handleSend = useCallback(async (text: string) => {
     try {
-      const reply = await sendChatRequest(text);
+      const { reply, audio } = await sendChatRequest(text);
+      const audioSrc = `data:${audio.mimeType};base64,${audio.base64}`;
+
       // eslint-disable-next-line no-console
-      console.info('Harry replied:', reply);
+      console.info('Harry replied:', reply, 'Audio ready:', audioSrc.length);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Chat request failed:', error);
