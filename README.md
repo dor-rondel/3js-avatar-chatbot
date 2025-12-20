@@ -99,6 +99,34 @@ docker compose up --build
 
 Once the container is healthy, visit http://localhost:3000. Stop the stack with `docker compose down`.
 
+## Publishing to GHCR
+
+This repo ships a `docker-publish` GitHub Action that builds the Dockerfile and pushes tags to `ghcr.io`. It runs automatically on every push to `main`, and you can trigger it manually via _Run workflow_ in the Actions tab. The workflow:
+
+1. Logs in to `ghcr.io` using the built-in `GITHUB_TOKEN` (already granted `packages: write`).
+2. Derives the image name `ghcr.io/<owner>/<repo>` in lowercase.
+3. Builds the Next.js production image with Buildx and pushes tags such as `sha-<short>` and `latest`.
+
+To publish the image yourself from a local machine:
+
+```bash
+# 1. Authenticate
+echo $GHCR_PAT | docker login ghcr.io -u <github-username> --password-stdin
+
+# 2. Build the production image
+IMAGE=ghcr.io/<github-username>/3js-avatar-chatbot:$(git rev-parse --short HEAD)
+docker build -t "$IMAGE" .
+
+# 3. Push it to the registry
+docker push "$IMAGE"
+```
+
+Use a classic personal access token with the `write:packages` scope (`GHCR_PAT` above) or reuse the same token the CI job uses. Any consumer (local machine, container platform, Railway) can then pull the image with:
+
+```bash
+docker pull ghcr.io/<github-username>/3js-avatar-chatbot:latest
+```
+
 ## Available Scripts
 
 - `pnpm dev`: Start the local Next.js server with hot reloading.
