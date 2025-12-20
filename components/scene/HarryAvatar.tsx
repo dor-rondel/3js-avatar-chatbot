@@ -6,8 +6,8 @@ import { useGLTF, useFBX, useAnimations } from '@react-three/drei';
 import type { GLTF } from 'three-stdlib';
 import {
   LoopOnce,
-  type AnimationAction,
   type AnimationClip,
+  type AnimationAction,
   type Group,
   type MeshStandardMaterial,
   type SkinnedMesh,
@@ -66,6 +66,39 @@ const ANIMATION_FILES = {
   waving: '/assets/animations/waving.fbx',
 } as const;
 
+const TRACK_PATH_DELIMITERS = /[:|]/;
+
+/**
+ * Normalizes Mixamo-style track names so they match the GLB skeleton (strip Armature/mixamorig prefixes).
+ */
+function normalizeTrackName(originalName: string): string {
+  const dotIndex = originalName.indexOf('.');
+  if (dotIndex === -1) {
+    return originalName;
+  }
+
+  const rawNodePath = originalName.slice(0, dotIndex);
+  const propertyPath = originalName.slice(dotIndex + 1);
+
+  const pathSegments = rawNodePath
+    .split(TRACK_PATH_DELIMITERS)
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+
+  let normalizedNode = pathSegments[pathSegments.length - 1] ?? rawNodePath;
+
+  if (normalizedNode.toLowerCase() === 'armature') {
+    normalizedNode = 'Hips';
+  }
+
+  normalizedNode = normalizedNode.replace(/^mixamorig/i, '');
+  if (!normalizedNode) {
+    normalizedNode = 'Hips';
+  }
+
+  return `${normalizedNode}.${propertyPath}`;
+}
+
 type AnimationClipName = keyof typeof ANIMATION_FILES;
 
 function resolveClipForExpression(
@@ -76,6 +109,10 @@ function resolveClipForExpression(
     : null;
 }
 
+/**
+ * Creates a sanitized copy of an FBX clip so we can safely mix it with the GLB skeleton.
+ * Removes root transforms that would teleport/scale the avatar, then updates track names.
+ */
 function prepareAnimationClip(
   source: AnimationClip | undefined,
   name: AnimationClipName
@@ -86,10 +123,21 @@ function prepareAnimationClip(
 
   const sanitized = source.clone();
   sanitized.name = name;
-  sanitized.tracks = sanitized.tracks.filter((track) => {
-    const property = track.name.split('.').pop();
-    return property !== 'scale';
-  });
+  sanitized.tracks = sanitized.tracks
+    .filter((track) => {
+      const property = track.name.split('.').pop();
+      const isRoot = track.name.includes('Hips');
+      if (!isRoot) {
+        return true;
+      }
+
+      return property !== 'scale' && property !== 'position';
+    })
+    .map((track) => {
+      track.name = normalizeTrackName(track.name);
+      return track;
+    });
+
   return sanitized;
 }
 
@@ -139,8 +187,14 @@ export default function HarryAvatar(props: GroupProps) {
   const expressionPresetRef = useRef<FacialExpressionPreset>(
     facialExpressions.default
   );
+  const introTimeoutIdRef = useRef<number | null>(null);
+  const introReadyRef = useRef(false);
   const activeActionRef = useRef<AnimationAction | null>(null);
-  const hasPlayedIntroRef = useRef(false);
+  const introHasStartedRef = useRef(false);
+  const introCompletedRef = useRef(false);
+  const pendingClipRef = useRef<AnimationClipName | null | undefined>(
+    undefined
+  );
 
   const smileFbx = useFBX(ANIMATION_FILES.smile);
   const laughFbx = useFBX(ANIMATION_FILES.laugh);
@@ -172,6 +226,7 @@ export default function HarryAvatar(props: GroupProps) {
 
   const { actions, mixer } = useAnimations(animationClips, groupRef);
 
+  /** Stops and clears the currently playing animation action if one exists. */
   const stopCurrentAction = useCallback(() => {
     if (!activeActionRef.current) {
       return;
@@ -182,8 +237,11 @@ export default function HarryAvatar(props: GroupProps) {
     activeActionRef.current = null;
   }, []);
 
-  /* eslint-disable react-hooks/immutability */
-  const playOneShotAnimation = useCallback(
+  /**
+   * Resets and plays the requested clip once, interrupting any existing action.
+   * Passing `null` smoothly returns the rig to its baseline pose.
+   */
+  const playAnimation = useCallback(
     (clipName: AnimationClipName | null) => {
       if (!actions) {
         return;
@@ -200,19 +258,47 @@ export default function HarryAvatar(props: GroupProps) {
         return;
       }
 
-      if (activeActionRef.current) {
+      if (activeActionRef.current && activeActionRef.current !== nextAction) {
         activeActionRef.current.stop();
       }
 
       activeActionRef.current = nextAction;
+      /* eslint-disable react-hooks/immutability */
+      nextAction.enabled = true;
+      nextAction.weight = 1;
       nextAction.reset();
       nextAction.setLoop(LoopOnce, 1);
       nextAction.clampWhenFinished = true;
       nextAction.play();
+      /* eslint-enable react-hooks/immutability */
     },
     [actions, stopCurrentAction]
   );
-  /* eslint-enable react-hooks/immutability */
+
+  /** Plays any queued clip once the intro waving animation completes. */
+  const flushPendingClip = useCallback(() => {
+    const pendingClip = pendingClipRef.current;
+    pendingClipRef.current = undefined;
+    if (pendingClip === undefined) {
+      return;
+    }
+
+    playAnimation(pendingClip);
+  }, [playAnimation]);
+
+  /** Queues clips during the intro wave; otherwise plays the clip immediately. */
+  const queueOrPlayClip = useCallback(
+    (clipName: AnimationClipName | null) => {
+      if (!introCompletedRef.current) {
+        pendingClipRef.current = clipName;
+        return;
+      }
+
+      pendingClipRef.current = undefined;
+      playAnimation(clipName);
+    },
+    [playAnimation]
+  );
 
   useEffect(() => {
     if (!mixer) {
@@ -220,8 +306,19 @@ export default function HarryAvatar(props: GroupProps) {
     }
 
     const handleFinished = (event: { action?: AnimationAction }) => {
-      if (event.action && event.action === activeActionRef.current) {
-        stopCurrentAction();
+      const finishedAction = event.action;
+      if (!finishedAction || finishedAction !== activeActionRef.current) {
+        return;
+      }
+
+      const clipName = finishedAction.getClip()?.name as
+        | AnimationClipName
+        | undefined;
+      stopCurrentAction();
+
+      if (clipName === 'waving') {
+        introCompletedRef.current = true;
+        flushPendingClip();
       }
     };
 
@@ -229,18 +326,46 @@ export default function HarryAvatar(props: GroupProps) {
     return () => {
       mixer.removeEventListener('finished', handleFinished);
     };
-  }, [mixer, stopCurrentAction]);
+  }, [flushPendingClip, mixer, stopCurrentAction]);
 
+  /**
+   * Delays the intro waving animation until the corresponding FBX action is available,
+   * then schedules it to run once before other clips play.
+   */
   useEffect(() => {
-    if (!actions || hasPlayedIntroRef.current) {
+    const wavingAction = actions?.waving;
+    if (!wavingAction) {
       return;
     }
 
-    if (actions.waving) {
-      hasPlayedIntroRef.current = true;
-      playOneShotAnimation('waving');
+    if (!introReadyRef.current) {
+      introReadyRef.current = true;
     }
-  }, [actions, playOneShotAnimation]);
+
+    if (introHasStartedRef.current) {
+      return;
+    }
+
+    introHasStartedRef.current = true;
+    introCompletedRef.current = false;
+
+    if (pendingClipRef.current === undefined) {
+      pendingClipRef.current = null;
+    }
+
+    introTimeoutIdRef.current = window.setTimeout(() => {
+      playAnimation('waving');
+      introTimeoutIdRef.current = null;
+    }, 500);
+
+    return () => {
+      if (introTimeoutIdRef.current !== null) {
+        window.clearTimeout(introTimeoutIdRef.current);
+        introTimeoutIdRef.current = null;
+        introHasStartedRef.current = false;
+      }
+    };
+  }, [actions, playAnimation]);
 
   /**
    * Start listening for viseme events so the Three.js render loop can react in real time.
@@ -267,11 +392,11 @@ export default function HarryAvatar(props: GroupProps) {
       expressionPresetRef.current =
         facialExpressions[expression] ?? facialExpressions.default;
 
-      playOneShotAnimation(resolveClipForExpression(expression));
+      queueOrPlayClip(resolveClipForExpression(expression));
     });
 
     return unsubscribe;
-  }, [playOneShotAnimation]);
+  }, [queueOrPlayClip]);
 
   /**
    * Every frame: decay all morph influences toward zero, optionally snap to silence,
@@ -279,6 +404,10 @@ export default function HarryAvatar(props: GroupProps) {
    */
   /* eslint-disable react-hooks/immutability */
   useFrame((_state, delta) => {
+    if (mixer) {
+      mixer.update(delta);
+    }
+
     const headMesh = nodes.Wolf3D_Head;
     const dictionary = headMesh.morphTargetDictionary;
     const influences = headMesh.morphTargetInfluences;
