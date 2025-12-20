@@ -12,8 +12,19 @@ const { chatInvokeSpy, chatCtorSpy } = vi.hoisted(() => {
   return { chatInvokeSpy, chatCtorSpy };
 });
 
+const { getSummaryMemoryMock, rebuildSummaryMemoryMock } = vi.hoisted(() => ({
+  getSummaryMemoryMock: vi.fn(),
+  rebuildSummaryMemoryMock: vi.fn(() => Promise.resolve('')),
+}));
+
 vi.mock('@langchain/google-genai', () => ({
   ChatGoogleGenerativeAI: chatCtorSpy,
+}));
+
+vi.mock('./memory/summaryMemory', () => ({
+  getSummaryMemory: getSummaryMemoryMock,
+  rebuildSummaryMemory: rebuildSummaryMemoryMock,
+  SummaryMemoryError: class SummaryMemoryError extends Error {},
 }));
 
 describe('executeChat', () => {
@@ -21,6 +32,9 @@ describe('executeChat', () => {
     vi.unstubAllEnvs();
     chatInvokeSpy.mockReset();
     chatCtorSpy.mockClear();
+    getSummaryMemoryMock.mockReset();
+    rebuildSummaryMemoryMock.mockClear();
+    rebuildSummaryMemoryMock.mockImplementation(() => Promise.resolve(''));
   });
 
   it('returns the Gemini reply text and sentiment', async () => {
@@ -36,6 +50,12 @@ describe('executeChat', () => {
     expect(result.sentiment).toBe('happy');
     expect(chatCtorSpy).toHaveBeenCalledWith(
       expect.objectContaining({ model: 'gemini-pro-latest' })
+    );
+    expect(rebuildSummaryMemoryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userMessage: 'Hello Harry!',
+        assistantReply: 'Hello there',
+      })
     );
   });
 

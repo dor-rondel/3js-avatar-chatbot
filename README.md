@@ -61,7 +61,7 @@ A Harry Potter–themed conversational agent that renders a fully animated 3D av
    GEMINI_API_KEY=your-gemini-key
    GEMINI_MODEL=gemini-2.5-flash
    LANGSMITH_API_KEY=your-langsmith-key
-   LANGSMITH_ENDPOINT=https://api.langsmith.com
+   LANGSMITH_ENDPOINT=https://api.smith.langchain.com
    LANGSMITH_CALLBACKS_BACKGROUND=true
    LANGSMITH_PROJECT=harry-potter-3d-chatbot
    LANGCHAIN_TRACING_V2=true

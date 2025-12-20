@@ -13,9 +13,9 @@ import {
   SENTIMENTS,
   type SentimentValue,
 } from '../expressions/facialExpressions';
-
-const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
-const LANGSMITH_PROJECT = 'harry-potter-3d-chatbot';
+import { DEFAULT_GEMINI_MODEL, LANGSMITH_PROJECT } from './constants';
+import { extractTextContent } from './utils/extractTextContent';
+import { getSummaryMemory, rebuildSummaryMemory } from './memory/summaryMemory';
 
 /**
  * Picks the preferred Gemini model, honoring an override via env variable.
@@ -25,42 +25,6 @@ function resolveGeminiModel(): string {
   return configured && configured.length > 0
     ? configured
     : DEFAULT_GEMINI_MODEL;
-}
-
-/**
- * Normalizes Gemini's flexible message payloads into a plain string.
- */
-function extractTextContent(message: AIMessage): string {
-  if (typeof message.content === 'string') {
-    return message.content.trim();
-  }
-
-  if (Array.isArray(message.content)) {
-    const chunks = message.content as Array<string | Record<string, unknown>>;
-
-    for (const chunk of chunks) {
-      if (typeof chunk === 'string') {
-        const text = chunk.trim();
-        if (text) {
-          return text;
-        }
-      }
-
-      if (
-        typeof chunk === 'object' &&
-        chunk !== null &&
-        'text' in chunk &&
-        typeof (chunk as { text?: string }).text === 'string'
-      ) {
-        const text = (chunk as { text?: string }).text?.trim();
-        if (text) {
-          return text;
-        }
-      }
-    }
-  }
-
-  return '';
 }
 
 export type ExecuteChatInput = {
@@ -120,10 +84,12 @@ export async function executeChat({
   }
 
   const sanitizedMessage = sanitizeUserMessage(message);
+  const model = resolveGeminiModel();
+  const summaryContext = summary ?? getSummaryMemory();
 
   const chat = new ChatGoogleGenerativeAI({
     apiKey,
-    model: resolveGeminiModel(),
+    model,
     temperature: 0.4,
     maxOutputTokens: 2048,
   });
@@ -134,7 +100,7 @@ export async function executeChat({
       new HumanMessage(
         buildUserPrompt({
           message: sanitizedMessage,
-          summary,
+          summary: summaryContext,
           formatInstructions: chatResponseParser.getFormatInstructions(),
         })
       ),
@@ -152,11 +118,22 @@ export async function executeChat({
     throw new GeminiResponseError('Gemini returned an empty response.');
   }
 
+  let parsed: z.infer<typeof chatResponseSchema>;
   try {
-    const parsed = await chatResponseParser.parse(raw);
-    return { reply: parsed.text, sentiment: parsed.sentiment };
+    parsed = await chatResponseParser.parse(raw);
   } catch {
     throw new GeminiResponseError('Gemini returned an invalid response.');
   }
+
+  await rebuildSummaryMemory({
+    apiKey,
+    model,
+    userMessage: sanitizedMessage,
+    assistantReply: parsed.text,
+    previousSummary: summaryContext,
+  });
+
+  return { reply: parsed.text, sentiment: parsed.sentiment };
 }
 export { InputSanitizationError } from './safety/sanitizeInput';
+export { SummaryMemoryError } from './memory/summaryMemory';
