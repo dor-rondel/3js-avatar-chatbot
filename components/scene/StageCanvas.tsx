@@ -50,7 +50,7 @@ export default function StageCanvas() {
     <div className="relative h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_20%_20%,#1c1530,#05030c_70%)]">
       <Canvas
         dpr={[1, 1.5]}
-        camera={{ position: [0, 0, 2.25], fov: 25 }}
+        camera={{ position: [0, 0, 2.25], fov: 35 }}
         shadows
         className="block h-full w-full"
         style={{ width: '100%', height: '100%' }}

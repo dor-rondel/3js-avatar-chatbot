@@ -56,11 +56,13 @@ A Harry Potter–themed conversational agent that renders a fully animated 3D av
    cp .env.local.example .env.local
    ```
 5. Populate secrets in `.env.local` (example):
+
    ```
    GEMINI_API_KEY=your-gemini-key
    GEMINI_MODEL=gemini-2.5-flash
    LANGSMITH_API_KEY=your-langsmith-key
    LANGSMITH_ENDPOINT=https://api.langsmith.com
+   LANGSMITH_CALLBACKS_BACKGROUND=true
    LANGSMITH_PROJECT=harry-potter-3d-chatbot
    LANGCHAIN_TRACING_V2=true
    ELEVENLABS_API_KEY=your-elevenlabs-key
@@ -69,6 +71,8 @@ A Harry Potter–themed conversational agent that renders a fully animated 3D av
    NEXT_PUBLIC_SSE_ENDPOINT=/api/chat
    NEXT_PUBLIC_LOADING_DELAY_MS=350
    ```
+
+   When LangSmith tracing is enabled, `LANGSMITH_CALLBACKS_BACKGROUND=true` lets LangChain flush telemetry asynchronously so local runs do not block or warn about foreground callbacks.
 
 ### Running the Development Server
 
