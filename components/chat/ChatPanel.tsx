@@ -5,6 +5,7 @@ import { Lipsync } from 'wawa-lipsync';
 import { ChatInput } from './ChatInput';
 import { sendChatRequest } from '../../lib/chat/sendChatRequest';
 import { decodeBase64Audio } from '../../lib/audio/decodeBase64Audio';
+import { emitViseme } from '../../lib/viseme/visemeEvents';
 
 type ChatPanelProps = Omit<HTMLAttributes<HTMLElement>, 'children'>;
 
@@ -30,6 +31,7 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
     }
 
     lastVisemeRef.current = null;
+    emitViseme({ label: 'viseme_sil', timestamp: 0 });
 
     if (
       objectUrlRef.current &&
@@ -94,6 +96,10 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
           const timestamp = audioElement.currentTime?.toFixed(2) ?? '0.00';
           // eslint-disable-next-line no-console
           console.info('[viseme]', currentViseme, '@', `${timestamp}s`);
+          emitViseme({
+            label: currentViseme,
+            timestamp: audioElement.currentTime ?? 0,
+          });
         }
         rafRef.current = window.requestAnimationFrame(tick);
       };
