@@ -1,4 +1,4 @@
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   act,
   fireEvent,
@@ -8,15 +8,17 @@ import {
 } from '@testing-library/react';
 import { ChatPanel } from './ChatPanel';
 
+const { sendChatRequestMock } = vi.hoisted(() => ({
+  sendChatRequestMock: vi.fn(),
+}));
+
+vi.mock('../../lib/chat/sendChatRequest', () => ({
+  sendChatRequest: sendChatRequestMock,
+}));
+
 describe('ChatPanel', () => {
-  let consoleSpy: ReturnType<typeof vi.spyOn>;
-
   beforeEach(() => {
-    consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    consoleSpy.mockRestore();
+    sendChatRequestMock.mockReset();
   });
 
   it('renders the conversational prompt and input placeholder', () => {
@@ -30,7 +32,8 @@ describe('ChatPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('forwards user text to the backend queue when sending', async () => {
+  it('posts user text to the chat endpoint when sending', async () => {
+    sendChatRequestMock.mockResolvedValueOnce('Hi!');
     render(<ChatPanel />);
 
     const textarea = screen.getByLabelText('Message');
@@ -45,10 +48,7 @@ describe('ChatPanel', () => {
     });
 
     await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Queued TTS request:',
-        'Wingardium Leviosa'
-      );
+      expect(sendChatRequestMock).toHaveBeenCalledWith('Wingardium Leviosa');
     });
   });
 });

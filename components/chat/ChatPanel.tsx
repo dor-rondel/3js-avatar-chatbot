@@ -2,6 +2,7 @@
 
 import { useCallback, type HTMLAttributes } from 'react';
 import { ChatInput } from './ChatInput';
+import { sendChatRequest } from '../../lib/chat/sendChatRequest';
 
 type ChatPanelProps = Omit<HTMLAttributes<HTMLElement>, 'children'>;
 
@@ -11,9 +12,14 @@ type ChatPanelProps = Omit<HTMLAttributes<HTMLElement>, 'children'>;
  */
 export function ChatPanel(sectionProps: ChatPanelProps = {}) {
   const handleSend = useCallback(async (text: string) => {
-    // Backend wiring will store and process the full transcript.
-    // eslint-disable-next-line no-console
-    console.info('Queued TTS request:', text);
+    try {
+      const reply = await sendChatRequest(text);
+      // eslint-disable-next-line no-console
+      console.info('Harry replied:', reply);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Chat request failed:', error);
+    }
   }, []);
 
   return (

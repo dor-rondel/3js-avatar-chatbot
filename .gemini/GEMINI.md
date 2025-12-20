@@ -12,6 +12,7 @@
 
 - Serve a single-user chat experience: frontend issues one POST request, server responds via Server-Sent Events (SSE) until completion.
 - Use LangChain to call the Gemini API with structured output (`text`, `sentiment`, `visemeHints`).
+- Enforce guardrails: sanitize every inbound prompt and reject common prompt-injection attempts before invoking LangChain/Gemini.
 - Maintain a **summary memory** object: after each user→assistant turn, rebuild a concise conversation summary (up to 10 sentences) and store it for the next prompt. This replaces full transcript storage and must be regenerated every cycle.
 - Map Gemini sentiment to avatar facial expressions and FBX animation clips rendered with React Three Fiber/Drei.
 - Generate audio + visemes through a dedicated Next.js **route handler** (`/api/headtts/route.ts`) that proxies to HeadTTS; sync playback with the avatar on the client.
@@ -60,6 +61,7 @@ _If a folder is missing today, assume it will exist once implementation begins. 
 
 ```
 GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash
 LANGSMITH_API_KEY=
 LANGSMITH_PROJECT=
 LANGSMITH_ENDPOINT=https://api.langsmith.com

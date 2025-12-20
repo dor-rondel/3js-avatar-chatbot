@@ -7,6 +7,9 @@ settings:
 importers:
   .:
     dependencies:
+      '@langchain/core':
+        specifier: ^0.2.36
+        version: 0.2.36(openai@4.104.0(ws@8.18.3)(zod@3.25.76))
       '@langchain/google-genai':
         specifier: ^0.1.6
         version: 0.1.12(@langchain/core@0.2.36(openai@4.104.0(ws@8.18.3)(zod@3.25.76)))(zod@3.25.76)
