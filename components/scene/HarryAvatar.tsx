@@ -1,14 +1,22 @@
 'use client';
 
-import { useEffect, useRef, type JSX } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type JSX } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
+import { useGLTF, useFBX, useAnimations } from '@react-three/drei';
 import type { GLTF } from 'three-stdlib';
-import type { Group, MeshStandardMaterial, SkinnedMesh } from 'three';
+import {
+  LoopOnce,
+  type AnimationAction,
+  type AnimationClip,
+  type Group,
+  type MeshStandardMaterial,
+  type SkinnedMesh,
+} from 'three';
 import { subscribeToVisemes } from '../../lib/viseme/visemeEvents';
 import {
   expressionMorphNames,
   facialExpressions,
+  type ExpressionName,
   type FacialExpressionPreset,
 } from '../../lib/expressions/facialExpressions';
 import { subscribeToExpressions } from '../../lib/expressions/expressionEvents';
@@ -47,6 +55,26 @@ type GroupProps = JSX.IntrinsicElements['group'];
 
 const GLB_PATH = '/assets/meshes/harry.glb';
 const EXPRESSION_INTENSITY = 1.25;
+
+const ANIMATION_FILES = {
+  smile: '/assets/animations/smile.fbx',
+  laugh: '/assets/animations/laugh.fbx',
+  sad: '/assets/animations/sad.fbx',
+  surprised: '/assets/animations/surprised.fbx',
+  angry: '/assets/animations/angry.fbx',
+  crazy: '/assets/animations/crazy.fbx',
+  waving: '/assets/animations/waving.fbx',
+} as const;
+
+type AnimationClipName = keyof typeof ANIMATION_FILES;
+
+function resolveClipForExpression(
+  expression: ExpressionName
+): AnimationClipName | null {
+  return expression in ANIMATION_FILES
+    ? (expression as AnimationClipName)
+    : null;
+}
 
 /**
  * Applies the current preset to a mesh that exposes compatible morph targets.
@@ -88,11 +116,116 @@ function blendExpressionPreset(
  */
 export default function HarryAvatar(props: GroupProps) {
   const { nodes, materials } = useGLTF(GLB_PATH) as unknown as GLTFResult;
+  const groupRef = useRef<Group | null>(null);
   const activeVisemeRef = useRef<string | null>(null);
   const snapToSilenceRef = useRef(false);
   const expressionPresetRef = useRef<FacialExpressionPreset>(
     facialExpressions.default
   );
+  const activeActionRef = useRef<AnimationAction | null>(null);
+  const hasPlayedIntroRef = useRef(false);
+
+  const smileFbx = useFBX(ANIMATION_FILES.smile);
+  const laughFbx = useFBX(ANIMATION_FILES.laugh);
+  const sadFbx = useFBX(ANIMATION_FILES.sad);
+  const surprisedFbx = useFBX(ANIMATION_FILES.surprised);
+  const angryFbx = useFBX(ANIMATION_FILES.angry);
+  const crazyFbx = useFBX(ANIMATION_FILES.crazy);
+  const wavingFbx = useFBX(ANIMATION_FILES.waving);
+
+  const animationClips = useMemo(() => {
+    const entries: Array<[AnimationClipName, AnimationClip | undefined]> = [
+      ['smile', smileFbx.animations[0]],
+      ['laugh', laughFbx.animations[0]],
+      ['sad', sadFbx.animations[0]],
+      ['surprised', surprisedFbx.animations[0]],
+      ['angry', angryFbx.animations[0]],
+      ['crazy', crazyFbx.animations[0]],
+      ['waving', wavingFbx.animations[0]],
+    ];
+
+    return entries.reduce<AnimationClip[]>((clips, [name, clip]) => {
+      if (!clip) {
+        return clips;
+      }
+
+      clip.name = name;
+      clips.push(clip);
+      return clips;
+    }, []);
+  }, [smileFbx, laughFbx, sadFbx, surprisedFbx, angryFbx, crazyFbx, wavingFbx]);
+
+  const { actions, mixer } = useAnimations(animationClips, groupRef);
+
+  const stopCurrentAction = useCallback(() => {
+    if (!activeActionRef.current) {
+      return;
+    }
+
+    activeActionRef.current.stop();
+    activeActionRef.current.reset();
+    activeActionRef.current = null;
+  }, []);
+
+  /* eslint-disable react-hooks/immutability */
+  const playOneShotAnimation = useCallback(
+    (clipName: AnimationClipName | null) => {
+      if (!actions) {
+        return;
+      }
+
+      if (!clipName) {
+        stopCurrentAction();
+        return;
+      }
+
+      const nextAction = actions[clipName];
+      if (!nextAction) {
+        stopCurrentAction();
+        return;
+      }
+
+      if (activeActionRef.current) {
+        activeActionRef.current.stop();
+      }
+
+      activeActionRef.current = nextAction;
+      nextAction.reset();
+      nextAction.setLoop(LoopOnce, 1);
+      nextAction.clampWhenFinished = true;
+      nextAction.play();
+    },
+    [actions, stopCurrentAction]
+  );
+  /* eslint-enable react-hooks/immutability */
+
+  useEffect(() => {
+    if (!mixer) {
+      return;
+    }
+
+    const handleFinished = (event: { action?: AnimationAction }) => {
+      if (event.action && event.action === activeActionRef.current) {
+        stopCurrentAction();
+      }
+    };
+
+    mixer.addEventListener('finished', handleFinished);
+    return () => {
+      mixer.removeEventListener('finished', handleFinished);
+    };
+  }, [mixer, stopCurrentAction]);
+
+  useEffect(() => {
+    if (!actions || hasPlayedIntroRef.current) {
+      return;
+    }
+
+    if (actions.waving) {
+      hasPlayedIntroRef.current = true;
+      playOneShotAnimation('waving');
+    }
+  }, [actions, playOneShotAnimation]);
 
   /**
    * Start listening for viseme events so the Three.js render loop can react in real time.
@@ -118,10 +251,12 @@ export default function HarryAvatar(props: GroupProps) {
     const unsubscribe = subscribeToExpressions((expression) => {
       expressionPresetRef.current =
         facialExpressions[expression] ?? facialExpressions.default;
+
+      playOneShotAnimation(resolveClipForExpression(expression));
     });
 
     return unsubscribe;
-  }, []);
+  }, [playOneShotAnimation]);
 
   /**
    * Every frame: decay all morph influences toward zero, optionally snap to silence,
@@ -172,7 +307,7 @@ export default function HarryAvatar(props: GroupProps) {
   /* eslint-enable react-hooks/immutability */
 
   return (
-    <group {...props} dispose={null}>
+    <group ref={groupRef} {...props} dispose={null}>
       <primitive object={nodes.Hips} />
       <skinnedMesh
         name="EyeLeft"
@@ -241,3 +376,10 @@ export default function HarryAvatar(props: GroupProps) {
 }
 
 useGLTF.preload(GLB_PATH);
+useFBX.preload(ANIMATION_FILES.smile);
+useFBX.preload(ANIMATION_FILES.laugh);
+useFBX.preload(ANIMATION_FILES.sad);
+useFBX.preload(ANIMATION_FILES.surprised);
+useFBX.preload(ANIMATION_FILES.angry);
+useFBX.preload(ANIMATION_FILES.crazy);
+useFBX.preload(ANIMATION_FILES.waving);
