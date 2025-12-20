@@ -25,9 +25,12 @@ const {
   LipsyncMock,
   connectAudioMock,
   processAudioMock,
+  emitVisemeMock,
+  getLatestLipsyncInstance,
 } = vi.hoisted(() => {
   const sendChatRequestMock = vi.fn();
   const mockPlay = vi.fn().mockResolvedValue(undefined);
+  const emitVisemeMock = vi.fn();
   type CreatedAudio = {
     src: string;
     currentTime: number;
@@ -50,11 +53,16 @@ const {
 
   const connectAudioMock = vi.fn();
   const processAudioMock = vi.fn();
+  const lipsyncInstances: LipsyncMock[] = [];
 
   class LipsyncMock {
     connectAudio = connectAudioMock;
     processAudio = processAudioMock;
     private currentViseme = '';
+
+    constructor() {
+      lipsyncInstances.push(this);
+    }
 
     get viseme() {
       return this.currentViseme;
@@ -74,11 +82,16 @@ const {
       mockPlay.mockReset();
       connectAudioMock.mockReset();
       processAudioMock.mockReset();
+      emitVisemeMock.mockReset();
+      lipsyncInstances.length = 0;
     },
     MockAudio,
     LipsyncMock,
     connectAudioMock,
     processAudioMock,
+    emitVisemeMock,
+    getLatestLipsyncInstance: () =>
+      lipsyncInstances[lipsyncInstances.length - 1] ?? null,
   };
 });
 
@@ -88,6 +101,10 @@ vi.mock('../../lib/chat/sendChatRequest', () => ({
 
 vi.mock('wawa-lipsync', () => ({
   Lipsync: LipsyncMock,
+}));
+
+vi.mock('../../lib/viseme/visemeEvents', () => ({
+  emitViseme: emitVisemeMock,
 }));
 
 let ChatPanelComponent: typeof ChatPanelComponentType | null = null;
@@ -245,9 +262,20 @@ describe('ChatPanel', () => {
       expect(requestAnimationFrameMock).toHaveBeenCalled();
     });
 
+    const lipsyncInstance = getLatestLipsyncInstance();
+    expect(lipsyncInstance).not.toBeNull();
+    lipsyncInstance!.viseme = 'viseme_PP';
+    if (createdAudios[0]) {
+      createdAudios[0].currentTime = 1.23;
+    }
+
     // Simulate one animation frame to ensure the lipsync loop executes.
     const frame = rafCallbacks[0];
     frame?.(0);
     expect(processAudioMock).toHaveBeenCalled();
+    expect(emitVisemeMock).toHaveBeenCalledWith({
+      label: 'viseme_PP',
+      timestamp: createdAudios[0]?.currentTime ?? 0,
+    });
   });
 });

@@ -1,9 +1,11 @@
 'use client';
 
-import type { JSX } from 'react';
+import { useEffect, useRef, type JSX } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import type { GLTF } from 'three-stdlib';
 import type { Group, MeshStandardMaterial, SkinnedMesh } from 'three';
+import { subscribeToVisemes } from '../../lib/viseme/visemeEvents';
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -41,6 +43,77 @@ const GLB_PATH = '/assets/meshes/harry.glb';
 
 export default function HarryAvatar(props: GroupProps) {
   const { nodes, materials } = useGLTF(GLB_PATH) as unknown as GLTFResult;
+  const activeVisemeRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const meshes: Array<[string, SkinnedMesh | undefined]> = [
+      ['Wolf3D_Head', nodes.Wolf3D_Head],
+      ['Wolf3D_Teeth', nodes.Wolf3D_Teeth],
+    ];
+
+    meshes.forEach(([label, mesh]) => {
+      const dict = mesh?.morphTargetDictionary;
+      const influences = mesh?.morphTargetInfluences;
+      if (!dict || !influences) {
+        return;
+      }
+
+      const rows = Object.entries(dict).map(([target, index]) => ({
+        target,
+        index,
+        influence: influences[index] ?? 0,
+      }));
+
+      if (!rows.length) {
+        return;
+      }
+
+      // eslint-disable-next-line no-console
+      console.groupCollapsed(`[morphTargets] ${label}`);
+      // eslint-disable-next-line no-console
+      console.table(rows);
+      // eslint-disable-next-line no-console
+      console.groupEnd();
+    });
+  }, [nodes]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToVisemes(({ label }) => {
+      activeVisemeRef.current = label;
+    });
+
+    return unsubscribe;
+  }, []);
+
+  useFrame((_state, delta) => {
+    const headMesh = nodes.Wolf3D_Head;
+    const dictionary = headMesh.morphTargetDictionary;
+    const influences = headMesh.morphTargetInfluences;
+    if (!dictionary || !influences) {
+      return;
+    }
+
+    const damping = Math.exp(-delta * 18);
+    /* eslint-disable react-hooks/immutability */
+    for (let index = 0; index < influences.length; index += 1) {
+      influences[index] *= damping;
+    }
+
+    const nextViseme = activeVisemeRef.current;
+    if (!nextViseme) {
+      return;
+    }
+
+    const targetIndex = dictionary[nextViseme];
+    if (typeof targetIndex !== 'number') {
+      return;
+    }
+
+    const boost = 1 - damping;
+    const nextValue = influences[targetIndex] + boost;
+    influences[targetIndex] = nextValue > 1 ? 1 : nextValue;
+    /* eslint-enable react-hooks/immutability */
+  });
 
   return (
     <group {...props} dispose={null}>
