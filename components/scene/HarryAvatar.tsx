@@ -5,7 +5,11 @@ import { useFrame } from '@react-three/fiber';
 import { useGLTF, useFBX, useAnimations } from '@react-three/drei';
 import type { GLTF } from 'three-stdlib';
 import {
+  Euler,
   LoopOnce,
+  MathUtils,
+  Quaternion,
+  QuaternionKeyframeTrack,
   type AnimationClip,
   type AnimationAction,
   type Group,
@@ -69,6 +73,57 @@ const ANIMATION_FILES = {
 const TRACK_PATH_DELIMITERS = /[:|]/;
 
 /**
+ * Manual orientation offsets tuned by eye so expression clips face the user cleanly.
+ * Adjust these values whenever the scene camera or avatar pose changes.
+ */
+const ORIENTATION_OFFSETS = Object.freeze({
+  leanForwardDeg: 75,
+  twistTowardViewerDeg: 0,
+});
+
+const FORWARD_LEAN_RADIANS = MathUtils.degToRad(
+  ORIENTATION_OFFSETS.leanForwardDeg
+);
+const VIEWER_TWIST_RADIANS = MathUtils.degToRad(
+  ORIENTATION_OFFSETS.twistTowardViewerDeg
+);
+
+function neutralizeRootRotation(
+  track: QuaternionKeyframeTrack,
+  targetOrientation?: Quaternion
+) {
+  const { values } = track;
+  if (values.length < 4) {
+    return;
+  }
+
+  const baseOrientation = new Quaternion(
+    values[0],
+    values[1],
+    values[2],
+    values[3]
+  ).normalize();
+  const inverseBase = baseOrientation.clone().invert();
+  const neutralizer = targetOrientation
+    ? targetOrientation.clone().multiply(inverseBase)
+    : inverseBase;
+
+  for (let index = 0; index < values.length; index += 4) {
+    const rotation = new Quaternion(
+      values[index],
+      values[index + 1],
+      values[index + 2],
+      values[index + 3]
+    );
+    rotation.premultiply(neutralizer).normalize();
+    values[index] = rotation.x;
+    values[index + 1] = rotation.y;
+    values[index + 2] = rotation.z;
+    values[index + 3] = rotation.w;
+  }
+}
+
+/**
  * Normalizes Mixamo-style track names so they match the GLB skeleton (strip Armature/mixamorig prefixes).
  */
 function normalizeTrackName(originalName: string): string {
@@ -101,6 +156,9 @@ function normalizeTrackName(originalName: string): string {
 
 type AnimationClipName = keyof typeof ANIMATION_FILES;
 
+const CLIPS_REQUIRING_ROOT_NEUTRALIZATION: ReadonlySet<AnimationClipName> =
+  new Set(['smile', 'laugh', 'sad', 'surprised', 'angry', 'crazy']);
+
 function resolveClipForExpression(
   expression: ExpressionName
 ): AnimationClipName | null {
@@ -115,7 +173,8 @@ function resolveClipForExpression(
  */
 function prepareAnimationClip(
   source: AnimationClip | undefined,
-  name: AnimationClipName
+  name: AnimationClipName,
+  targetRootQuaternion?: Quaternion
 ): AnimationClip | null {
   if (!source) {
     return null;
@@ -134,6 +193,17 @@ function prepareAnimationClip(
       return property !== 'scale' && property !== 'position';
     })
     .map((track) => {
+      const property = track.name.split('.').pop();
+      const isRoot = track.name.includes('Hips');
+      if (
+        CLIPS_REQUIRING_ROOT_NEUTRALIZATION.has(name) &&
+        isRoot &&
+        property === 'quaternion' &&
+        track instanceof QuaternionKeyframeTrack
+      ) {
+        neutralizeRootRotation(track, targetRootQuaternion);
+      }
+
       track.name = normalizeTrackName(track.name);
       return track;
     });
@@ -204,6 +274,34 @@ export default function HarryAvatar(props: GroupProps) {
   const crazyFbx = useFBX(ANIMATION_FILES.crazy);
   const wavingFbx = useFBX(ANIMATION_FILES.waving);
 
+  const baseRigQuaternion = useMemo(
+    () => nodes.Hips.quaternion.clone(),
+    [nodes.Hips]
+  );
+
+  const forwardTiltQuaternion = useMemo(() => {
+    const quaternion = new Quaternion();
+    quaternion.setFromEuler(new Euler(FORWARD_LEAN_RADIANS, 0, 0));
+    return quaternion;
+  }, []);
+
+  const viewerTwistQuaternion = useMemo(() => {
+    const quaternion = new Quaternion();
+    quaternion.setFromEuler(new Euler(0, VIEWER_TWIST_RADIANS, 0));
+    return quaternion;
+  }, []);
+
+  /**
+   * Anchor every sanitized clip to the same forward-leaning, viewer-facing pose so they blend cleanly
+   * with the GLB rig regardless of how Mixamo authored the root.
+   */
+  const targetRootQuaternion = useMemo(() => {
+    const adjusted = baseRigQuaternion.clone();
+    adjusted.premultiply(viewerTwistQuaternion);
+    adjusted.premultiply(forwardTiltQuaternion);
+    return adjusted;
+  }, [baseRigQuaternion, forwardTiltQuaternion, viewerTwistQuaternion]);
+
   const animationClips = useMemo(() => {
     const entries: Array<[AnimationClipName, AnimationClip | undefined]> = [
       ['smile', smileFbx.animations[0]],
@@ -216,13 +314,22 @@ export default function HarryAvatar(props: GroupProps) {
     ];
 
     return entries.reduce<AnimationClip[]>((clips, [name, clip]) => {
-      const sanitized = prepareAnimationClip(clip, name);
+      const sanitized = prepareAnimationClip(clip, name, targetRootQuaternion);
       if (sanitized) {
         clips.push(sanitized);
       }
       return clips;
     }, []);
-  }, [smileFbx, laughFbx, sadFbx, surprisedFbx, angryFbx, crazyFbx, wavingFbx]);
+  }, [
+    targetRootQuaternion,
+    smileFbx,
+    laughFbx,
+    sadFbx,
+    surprisedFbx,
+    angryFbx,
+    crazyFbx,
+    wavingFbx,
+  ]);
 
   const { actions, mixer } = useAnimations(animationClips, groupRef);
 
