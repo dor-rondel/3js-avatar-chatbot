@@ -48,7 +48,10 @@ describe('POST /api/chat', () => {
   });
 
   it('returns the Gemini reply when the payload is valid', async () => {
-    executeChatMock.mockResolvedValueOnce({ reply: 'Hi there' });
+    executeChatMock.mockResolvedValueOnce({
+      reply: 'Hi there',
+      sentiment: 'happy',
+    });
     synthesizeSpeechMock.mockResolvedValueOnce({
       base64: 'abc',
       mimeType: 'audio/mpeg',
@@ -64,6 +67,7 @@ describe('POST /api/chat', () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
       reply: 'Hi there',
+      sentiment: 'happy',
       audio: { base64: 'abc', mimeType: 'audio/mpeg' },
     });
   });
@@ -145,7 +149,10 @@ describe('POST /api/chat', () => {
   });
 
   it('surfaces ElevenLabs configuration problems', async () => {
-    executeChatMock.mockResolvedValueOnce({ reply: 'Hi there' });
+    executeChatMock.mockResolvedValueOnce({
+      reply: 'Hi there',
+      sentiment: 'happy',
+    });
     synthesizeSpeechMock.mockRejectedValueOnce(
       new ElevenLabsConfigurationError('Missing ElevenLabs key')
     );
@@ -164,7 +171,10 @@ describe('POST /api/chat', () => {
   });
 
   it('maps ElevenLabs synthesis issues to 502', async () => {
-    executeChatMock.mockResolvedValueOnce({ reply: 'Hi there' });
+    executeChatMock.mockResolvedValueOnce({
+      reply: 'Hi there',
+      sentiment: 'happy',
+    });
     synthesizeSpeechMock.mockRejectedValueOnce(
       new ElevenLabsSynthesisError('Quota exceeded')
     );

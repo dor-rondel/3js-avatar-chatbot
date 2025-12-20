@@ -6,6 +6,12 @@ import { useGLTF } from '@react-three/drei';
 import type { GLTF } from 'three-stdlib';
 import type { Group, MeshStandardMaterial, SkinnedMesh } from 'three';
 import { subscribeToVisemes } from '../../lib/viseme/visemeEvents';
+import {
+  expressionMorphNames,
+  facialExpressions,
+  type FacialExpressionPreset,
+} from '../../lib/expressions/facialExpressions';
+import { subscribeToExpressions } from '../../lib/expressions/expressionEvents';
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -41,6 +47,13 @@ type GroupProps = JSX.IntrinsicElements['group'];
 
 const GLB_PATH = '/assets/meshes/harry.glb';
 
+function applyMorphTargetInfluences(
+  mesh: SkinnedMesh,
+  values: number[]
+) {
+  mesh.morphTargetInfluences = values;
+}
+
 /**
  * Loads the rigged GLB avatar, surfaces its morph target dictionary for debugging,
  * and animates mouth visemes in sync with the shared `visemeEvents` bus.
@@ -49,6 +62,9 @@ export default function HarryAvatar(props: GroupProps) {
   const { nodes, materials } = useGLTF(GLB_PATH) as unknown as GLTFResult;
   const activeVisemeRef = useRef<string | null>(null);
   const snapToSilenceRef = useRef(false);
+  const expressionPresetRef = useRef<FacialExpressionPreset>(
+    facialExpressions.default
+  );
 
   /**
    * Developer helper: log every mesh's morph targets so we know which viseme names are available.
@@ -103,18 +119,31 @@ export default function HarryAvatar(props: GroupProps) {
   }, []);
 
   /**
+   * Mirror sentiment events by storing the current facial expression preset.
+   */
+  useEffect(() => {
+    const unsubscribe = subscribeToExpressions((expression) => {
+      expressionPresetRef.current =
+        facialExpressions[expression] ?? facialExpressions.default;
+    });
+
+    return unsubscribe;
+  }, []);
+
+  /**
    * Every frame: decay all morph influences toward zero, optionally snap to silence,
    * then boost the morph target matching the most recent viseme tag.
    */
   useFrame((_state, delta) => {
     const headMesh = nodes.Wolf3D_Head;
     const dictionary = headMesh.morphTargetDictionary;
-    const influences = headMesh.morphTargetInfluences;
-    if (!dictionary || !influences) {
+    const baseInfluences = headMesh.morphTargetInfluences;
+    if (!dictionary || !baseInfluences) {
       return;
     }
 
-    /* eslint-disable react-hooks/immutability */
+    const influences = Array.from(baseInfluences);
+
     const damping = Math.exp(-delta * 18);
     for (let index = 0; index < influences.length; index += 1) {
       if (snapToSilenceRef.current) {
@@ -138,11 +167,28 @@ export default function HarryAvatar(props: GroupProps) {
         }
       }
     }
-    /* eslint-enable react-hooks/immutability */
 
     if (snappedToSilence) {
+      applyMorphTargetInfluences(headMesh, influences);
       return;
     }
+
+    const expressionTargets = expressionPresetRef.current;
+    const expressionLerp = 1 - Math.exp(-delta * 6);
+    for (const morphName of expressionMorphNames) {
+      const targetIndex = dictionary[morphName];
+      if (typeof targetIndex !== 'number') {
+        continue;
+      }
+
+      const targetValue = expressionTargets[morphName] ?? 0;
+      const currentValue = influences[targetIndex] ?? 0;
+      const nextValue =
+        currentValue + (targetValue - currentValue) * expressionLerp;
+      influences[targetIndex] = nextValue;
+    }
+
+    applyMorphTargetInfluences(headMesh, influences);
   });
 
   return (

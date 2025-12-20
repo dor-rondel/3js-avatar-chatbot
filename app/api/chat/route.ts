@@ -50,6 +50,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       reply: result.reply,
+      sentiment: result.sentiment,
       audio,
     });
   } catch (error) {

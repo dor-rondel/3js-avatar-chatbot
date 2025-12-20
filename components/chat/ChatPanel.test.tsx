@@ -26,11 +26,13 @@ const {
   connectAudioMock,
   processAudioMock,
   emitVisemeMock,
+  emitExpressionMock,
   getLatestLipsyncInstance,
 } = vi.hoisted(() => {
   const sendChatRequestMock = vi.fn();
   const mockPlay = vi.fn().mockResolvedValue(undefined);
   const emitVisemeMock = vi.fn();
+  const emitExpressionMock = vi.fn();
   type CreatedAudio = {
     src: string;
     currentTime: number;
@@ -83,6 +85,7 @@ const {
       connectAudioMock.mockReset();
       processAudioMock.mockReset();
       emitVisemeMock.mockReset();
+      emitExpressionMock.mockReset();
       lipsyncInstances.length = 0;
     },
     MockAudio,
@@ -90,6 +93,7 @@ const {
     connectAudioMock,
     processAudioMock,
     emitVisemeMock,
+    emitExpressionMock,
     getLatestLipsyncInstance: () =>
       lipsyncInstances[lipsyncInstances.length - 1] ?? null,
   };
@@ -105,6 +109,10 @@ vi.mock('wawa-lipsync', () => ({
 
 vi.mock('../../lib/viseme/visemeEvents', () => ({
   emitViseme: emitVisemeMock,
+}));
+
+vi.mock('../../lib/expressions/expressionEvents', () => ({
+  emitExpression: emitExpressionMock,
 }));
 
 let ChatPanelComponent: typeof ChatPanelComponentType | null = null;
@@ -239,6 +247,7 @@ describe('ChatPanel', () => {
   it('posts user text, plays audio, and wires lipsync', async () => {
     sendChatRequestMock.mockResolvedValueOnce({
       reply: 'Hi!',
+      sentiment: 'happy',
       audio: { base64: 'YWJj', mimeType: 'audio/mpeg' },
     });
     renderChatPanel();
@@ -260,6 +269,8 @@ describe('ChatPanel', () => {
       expect(createdAudios[0]?.src.startsWith('blob:')).toBe(true);
       expect(connectAudioMock).toHaveBeenCalledWith(createdAudios[0]);
       expect(requestAnimationFrameMock).toHaveBeenCalled();
+      expect(emitExpressionMock).toHaveBeenNthCalledWith(1, 'default');
+      expect(emitExpressionMock).toHaveBeenNthCalledWith(2, 'smile');
     });
 
     const lipsyncInstance = getLatestLipsyncInstance();
@@ -283,5 +294,6 @@ describe('ChatPanel', () => {
       label: 'viseme_sil',
       timestamp: 0,
     });
+    expect(emitExpressionMock).toHaveBeenLastCalledWith('default');
   });
 });

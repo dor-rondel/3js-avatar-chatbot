@@ -6,6 +6,8 @@ import { ChatInput } from './ChatInput';
 import { sendChatRequest } from '../../lib/chat/sendChatRequest';
 import { decodeBase64Audio } from '../../lib/audio/decodeBase64Audio';
 import { emitViseme } from '../../lib/viseme/visemeEvents';
+import { emitExpression } from '../../lib/expressions/expressionEvents';
+import { resolveExpressionForSentiment } from '../../lib/expressions/facialExpressions';
 
 type ChatPanelProps = Omit<HTMLAttributes<HTMLElement>, 'children'>;
 
@@ -32,6 +34,7 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
 
     lastVisemeRef.current = null;
     emitViseme({ label: 'viseme_sil', timestamp: 0 });
+    emitExpression('default');
 
     if (
       objectUrlRef.current &&
@@ -137,7 +140,7 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
   const handleSend = useCallback(
     async (text: string) => {
       try {
-        const { reply, audio } = await sendChatRequest(text);
+        const { reply, audio, sentiment } = await sendChatRequest(text);
         const element = getAudioElement();
 
         if (!element) {
@@ -150,6 +153,7 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
         const blob = new Blob([audioBuffer], { type: audio.mimeType });
 
         cleanupAudioResources();
+        emitExpression(resolveExpressionForSentiment(sentiment));
 
         const canUseBlobUrl =
           typeof URL !== 'undefined' &&

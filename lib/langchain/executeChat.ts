@@ -4,13 +4,22 @@ import {
   SystemMessage,
   type AIMessage,
 } from '@langchain/core/messages';
+import { StructuredOutputParser } from '@langchain/core/output_parsers';
+import { z } from 'zod';
 import { buildSystemPrompt } from './prompts/system';
 import { buildUserPrompt } from './prompts/user';
 import { sanitizeUserMessage } from './safety/sanitizeInput';
+import {
+  SENTIMENTS,
+  type SentimentValue,
+} from '../expressions/facialExpressions';
 
 const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 const LANGSMITH_PROJECT = 'harry-potter-3d-chatbot';
 
+/**
+ * Picks the preferred Gemini model, honoring an override via env variable.
+ */
 function resolveGeminiModel(): string {
   const configured = process.env.GEMINI_MODEL?.trim();
   return configured && configured.length > 0
@@ -18,6 +27,9 @@ function resolveGeminiModel(): string {
     : DEFAULT_GEMINI_MODEL;
 }
 
+/**
+ * Normalizes Gemini's flexible message payloads into a plain string.
+ */
 function extractTextContent(message: AIMessage): string {
   if (typeof message.content === 'string') {
     return message.content.trim();
@@ -58,6 +70,7 @@ export type ExecuteChatInput = {
 
 export type ExecuteChatResult = {
   reply: string;
+  sentiment: SentimentValue;
 };
 
 export class ConfigurationError extends Error {
@@ -73,6 +86,22 @@ export class GeminiResponseError extends Error {
     this.name = 'GeminiResponseError';
   }
 }
+
+/**
+ * Structured format sent to Gemini so it emits both reply text and sentiment label.
+ */
+const chatResponseSchema = z.object({
+  text: z.string().describe('Conversational response as Harry Potter'),
+  sentiment: z
+    .enum(SENTIMENTS)
+    .describe('Emotional tone that best matches the reply'),
+});
+
+/**
+ * LangChain parser that converts the LLM response into the strict schema.
+ */
+const chatResponseParser =
+  StructuredOutputParser.fromZodSchema(chatResponseSchema);
 
 /**
  * Calls Gemini Flash 2.5 through LangChain after performing local safeguards.
@@ -102,7 +131,13 @@ export async function executeChat({
   const response = (await chat.invoke(
     [
       new SystemMessage(buildSystemPrompt()),
-      new HumanMessage(buildUserPrompt({ message: sanitizedMessage, summary })),
+      new HumanMessage(
+        buildUserPrompt({
+          message: sanitizedMessage,
+          summary,
+          formatInstructions: chatResponseParser.getFormatInstructions(),
+        })
+      ),
     ],
     {
       metadata: {
@@ -112,11 +147,16 @@ export async function executeChat({
     }
   )) as AIMessage;
 
-  const reply = extractTextContent(response);
-  if (!reply) {
+  const raw = extractTextContent(response);
+  if (!raw) {
     throw new GeminiResponseError('Gemini returned an empty response.');
   }
 
-  return { reply };
+  try {
+    const parsed = await chatResponseParser.parse(raw);
+    return { reply: parsed.text, sentiment: parsed.sentiment };
+  } catch {
+    throw new GeminiResponseError('Gemini returned an invalid response.');
+  }
 }
 export { InputSanitizationError } from './safety/sanitizeInput';
