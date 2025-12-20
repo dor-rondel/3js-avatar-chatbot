@@ -6,6 +6,8 @@ import { ChatInput } from './ChatInput';
 import { sendChatRequest } from '../../lib/chat/sendChatRequest';
 import { decodeBase64Audio } from '../../lib/audio/decodeBase64Audio';
 import { emitViseme } from '../../lib/viseme/visemeEvents';
+import { emitExpression } from '../../lib/expressions/expressionEvents';
+import { resolveExpressionForSentiment } from '../../lib/expressions/facialExpressions';
 
 type ChatPanelProps = Omit<HTMLAttributes<HTMLElement>, 'children'>;
 
@@ -32,6 +34,7 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
 
     lastVisemeRef.current = null;
     emitViseme({ label: 'viseme_sil', timestamp: 0 });
+    emitExpression('default');
 
     if (
       objectUrlRef.current &&
@@ -75,7 +78,7 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
 
   /**
    * Kicks off a `requestAnimationFrame` loop that polls lipsync visemes
-   * while audio is playing and logs transitions for debugging.
+   * while audio is playing and forwards them to the scene.
    */
   const startVisemeLoop = useCallback(
     (audioElement: HTMLAudioElement) => {
@@ -93,9 +96,6 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
         const currentViseme = manager.viseme;
         if (currentViseme && currentViseme !== lastVisemeRef.current) {
           lastVisemeRef.current = currentViseme;
-          const timestamp = audioElement.currentTime?.toFixed(2) ?? '0.00';
-          // eslint-disable-next-line no-console
-          console.info('[viseme]', currentViseme, '@', `${timestamp}s`);
           emitViseme({
             label: currentViseme,
             timestamp: audioElement.currentTime ?? 0,
@@ -137,12 +137,10 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
   const handleSend = useCallback(
     async (text: string) => {
       try {
-        const { reply, audio } = await sendChatRequest(text);
+        const { audio, sentiment } = await sendChatRequest(text);
         const element = getAudioElement();
 
         if (!element) {
-          // eslint-disable-next-line no-console
-          console.warn('Audio playback is not supported in this browser.');
           return;
         }
 
@@ -150,6 +148,7 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
         const blob = new Blob([audioBuffer], { type: audio.mimeType });
 
         cleanupAudioResources();
+        emitExpression(resolveExpressionForSentiment(sentiment));
 
         const canUseBlobUrl =
           typeof URL !== 'undefined' &&
@@ -175,9 +174,6 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
         };
 
         await element.play();
-
-        // eslint-disable-next-line no-console
-        console.info('Harry replied:', reply);
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Chat request failed:', error);

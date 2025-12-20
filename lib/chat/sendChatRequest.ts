@@ -1,7 +1,9 @@
 import { z } from 'zod';
+import { SENTIMENTS } from '../expressions/facialExpressions';
 
 const replySchema = z.object({
   reply: z.string(),
+  sentiment: z.enum(SENTIMENTS),
   audio: z.object({
     base64: z.string(),
     mimeType: z.string(),

@@ -23,14 +23,17 @@ describe('executeChat', () => {
     chatCtorSpy.mockClear();
   });
 
-  it('returns the Gemini reply text', async () => {
+  it('returns the Gemini reply text and sentiment', async () => {
     vi.stubEnv('GEMINI_API_KEY', 'test-key');
     vi.stubEnv('GEMINI_MODEL', 'gemini-pro-latest');
-    chatInvokeSpy.mockResolvedValueOnce({ content: 'Hello there ' });
+    chatInvokeSpy.mockResolvedValueOnce({
+      content: '{"text":"Hello there","sentiment":"happy"}',
+    });
 
     const result = await executeChat({ message: '  Hello Harry!  ' });
 
     expect(result.reply).toBe('Hello there');
+    expect(result.sentiment).toBe('happy');
     expect(chatCtorSpy).toHaveBeenCalledWith(
       expect.objectContaining({ model: 'gemini-pro-latest' })
     );
@@ -59,9 +62,20 @@ describe('executeChat', () => {
     );
   });
 
+  it('throws when Gemini returns invalid structured output', async () => {
+    vi.stubEnv('GEMINI_API_KEY', 'test-key');
+    chatInvokeSpy.mockResolvedValueOnce({ content: 'not-json' });
+
+    await expect(executeChat({ message: 'Hello?' })).rejects.toThrow(
+      GeminiResponseError
+    );
+  });
+
   it('falls back to the default Gemini model when none is configured', async () => {
     vi.stubEnv('GEMINI_API_KEY', 'test-key');
-    chatInvokeSpy.mockResolvedValueOnce({ content: 'Hi' });
+    chatInvokeSpy.mockResolvedValueOnce({
+      content: '{"text":"Hi","sentiment":"happy"}',
+    });
 
     await executeChat({ message: 'Hello' });
 

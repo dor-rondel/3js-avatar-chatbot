@@ -14,6 +14,7 @@ describe('sendChatRequest', () => {
       new Response(
         JSON.stringify({
           reply: 'Hello!',
+          sentiment: 'happy',
           audio: { base64: 'abc', mimeType: 'audio/mpeg' },
         }),
         {
@@ -24,6 +25,7 @@ describe('sendChatRequest', () => {
 
     await expect(sendChatRequest('Hi')).resolves.toEqual({
       reply: 'Hello!',
+      sentiment: 'happy',
       audio: { base64: 'abc', mimeType: 'audio/mpeg' },
     });
     expect(fetchMock).toHaveBeenCalledWith('/api/chat', expect.any(Object));
