@@ -76,14 +76,6 @@ pnpm dev
 
 Open http://localhost:3000 to access the chat UI. Each prompt triggers an SSE stream; keep the tab open until the avatar completes its response.
 
-### Chat API (work in progress)
-
-- `POST /api/chat`
-  - Request body: `{ "message": string }`
-  - Response body (temporary non-SSE): `{ "reply": string }`
-  - The handler sanitizes user input with prompt-injection heuristics, records LangSmith traces under the fixed `harry-potter-3d-chatbot` project, and fans out to the Gemini model configured via `GEMINI_MODEL` (defaults to Flash 2.5).
-  - Future updates will upgrade this endpoint to Server-Sent Events and integrate memory plus HeadTTS cues.
-
 ## Available Scripts
 
 - `pnpm dev`: Start the local Next.js server with hot reloading.
