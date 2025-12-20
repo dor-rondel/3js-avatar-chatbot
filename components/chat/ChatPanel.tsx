@@ -31,6 +31,7 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
     }
 
     lastVisemeRef.current = null;
+    emitViseme({ label: 'viseme_sil', timestamp: 0 });
 
     if (
       objectUrlRef.current &&

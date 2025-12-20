@@ -277,5 +277,11 @@ describe('ChatPanel', () => {
       label: 'viseme_PP',
       timestamp: createdAudios[0]?.currentTime ?? 0,
     });
+
+    createdAudios[0]?.onended?.();
+    expect(emitVisemeMock).toHaveBeenLastCalledWith({
+      label: 'viseme_sil',
+      timestamp: 0,
+    });
   });
 });
