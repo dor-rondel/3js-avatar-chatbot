@@ -5,6 +5,11 @@ import {
   InputSanitizationError,
   executeChat,
 } from '../../../lib/langchain/executeChat';
+import {
+  ElevenLabsConfigurationError,
+  ElevenLabsSynthesisError,
+  synthesizeSpeech,
+} from '../../../lib/voice/synthesizeWithElevenLabs';
 
 const GENERIC_ERROR_MESSAGE =
   'Unable to chat with Harry right now. Please retry.';
@@ -41,17 +46,28 @@ export async function POST(request: Request) {
       summary: payload.summary,
     });
 
-    return NextResponse.json({ reply: result.reply });
+    const audio = await synthesizeSpeech({ text: result.reply });
+
+    return NextResponse.json({
+      reply: result.reply,
+      audio,
+    });
   } catch (error) {
     if (error instanceof InputSanitizationError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    if (error instanceof ConfigurationError) {
+    if (
+      error instanceof ConfigurationError ||
+      error instanceof ElevenLabsConfigurationError
+    ) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    if (error instanceof GeminiResponseError) {
+    if (
+      error instanceof GeminiResponseError ||
+      error instanceof ElevenLabsSynthesisError
+    ) {
       return NextResponse.json({ error: error.message }, { status: 502 });
     }
 

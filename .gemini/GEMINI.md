@@ -10,12 +10,12 @@
 
 ## 1. Responsibilities & Flow
 
-- Serve a single-user chat experience: frontend issues one POST per turn, the server returns a single JSON payload (assistant text + metadata), and that output is forwarded to ElevenLabs for synthesis.
+- Serve a single-user chat experience: frontend issues one POST per turn, the server returns a single JSON payload that already contains the assistant text plus the synthesized ElevenLabs audio metadata needed for playback.
 - Use LangChain to call the Gemini API with structured output (`text`, `sentiment`, `visemeHints`).
 - Enforce guardrails: sanitize every inbound prompt and reject common prompt-injection attempts before invoking LangChain/Gemini.
 - Maintain a **summary memory** object: after each user→assistant turn, rebuild a concise conversation summary (up to 10 sentences) and store it for the next prompt. This replaces full transcript storage and must be regenerated every cycle.
 - Map Gemini sentiment to avatar facial expressions and FBX animation clips rendered with React Three Fiber/Drei.
-- Generate audio via a dedicated Next.js **route handler** (`/api/voice/route.ts`) that streams ElevenLabs output; pipe that stream into a browser `AnalyserNode` and run [wawa-lipsync](https://github.com/wass08/wawa-lipsync) client-side to extract visemes in real time.
+- Generate audio inside the chat route by calling the ElevenLabs streaming API; pipe the returned audio payload into a browser `AnalyserNode` and run [wawa-lipsync](https://github.com/wass08/wawa-lipsync) client-side to extract visemes in real time.
 - Capture LangChain traces with LangSmith even when the app runs inside Docker.
 - Ensure obvious loading states in the UI (chat input disabled, spinner overlay on the avatar) while awaiting the chat response or while the ElevenLabs audio stream initializes and the wawa-lipsync analyser warms up.
 - Maintain `app/layout.tsx` with SEO metadata (title, description, Open Graph) because this project is part of a public portfolio.
@@ -28,13 +28,13 @@
 /app                         # Next.js 16 App Router code
    /page.tsx                  # Chat UI + 3D scene shell
    /layout.tsx                # SEO metadata + shared providers
-   /api/chat/route.ts         # Chat endpoint (returns complete assistant turns)
-   /api/voice/route.ts        # ElevenLabs proxy for low-latency audio streaming
-  /lib/langchain/            # Prompt templates, memory helpers
-  /lib/langchain/memory/     # In-memory summary cache per session
-  /components/scene/         # React Three Fiber scene + controls
-  /components/chat/          # Message list, controls, HUD
-  /globals.css               # Global styles/theme tokens
+   /api/chat/route.ts         # Chat endpoint (returns complete assistant turns + audio)
+/lib/langchain/             # Prompt templates, memory helpers
+/lib/langchain/memory/      # In-memory summary cache per session
+/lib/voice/                 # ElevenLabs integration helpers
+/components/scene/          # React Three Fiber scene + controls
+/components/chat/           # Message list, controls, HUD
+/globals.css                # Global styles/theme tokens
 /public
   /assets/avatar/            # FBX meshes, textures, morph targets
 .gemini/GEMINI.md            # This file
@@ -147,9 +147,8 @@ pnpm dev
 
 - Endpoint: `POST /api/chat`
 - Request payload: { message, emotionOverride? }
-- Response: JSON payload delivered once per request containing the assistant text plus structured metadata (sentiment, animation cues, viseme hints, summary memory updates).
-- The frontend opens a brand-new POST for each user prompt, then forwards the returned assistant text to ElevenLabs (optionally streaming the resulting audio buffer back to the browser for wawa-lipsync as it becomes available).
-- `/api/voice/route.ts` accepts `{ text, voiceId }`, relays a streaming request to ElevenLabs, and returns audio metadata/URLs; the frontend immediately routes that stream through wawa-lipsync (via an `AnalyserNode`) to compute visemes client-side after each Gemini turn.
+- Response: JSON payload delivered once per request containing the assistant text, structured metadata (sentiment, animation cues, viseme hints, summary memory updates), and the base64-encoded ElevenLabs audio + MIME type.
+- The frontend opens a brand-new POST for each user prompt, consumes the reply + audio immediately, and pipes the decoded audio stream into wawa-lipsync (via an `AnalyserNode`) to drive the avatar mouth shapes.
 - LangChain pipeline must:
   1.  Feed Gemini both the latest user message and the current summary memory string.
   2.  Parse Gemini's structured response to get the new assistant text and metadata.
@@ -224,12 +223,12 @@ Avoid overthinking:
 
 ## 8. Troubleshooting
 
-| Symptom                    | Checks                                                                                                                                                                                                    |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No chat response returns   | Confirm `POST /api/chat` requests resolve (check `docker compose logs -f app`), ensure the LangChain pipeline is not throwing, and validate the client awaits the JSON payload before calling ElevenLabs. |
-| Avatar idle / no animation | Validate structured output contains `sentiment` tag, inspect `packages/avatar-animator` mapping, ensure FBX clips load under `public/assets/avatar/`.                                                     |
-| No audio output            | Check ElevenLabs quota/status and inspect `/api/voice` logs; for missing visemes, validate the browser grants AudioContext access and wawa-lipsync attaches to the correct `AnalyserNode`.                |
-| Missing LangSmith traces   | Make sure env vars exist inside container, `LANGCHAIN_TRACING_V2=true`, and outbound HTTPS access is allowed.                                                                                             |
+| Symptom                    | Checks                                                                                                                                                                                                                       |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No chat response returns   | Confirm `POST /api/chat` requests resolve (check `docker compose logs -f app`), ensure the LangChain pipeline is not throwing, and validate the client awaits the JSON payload before calling ElevenLabs.                    |
+| Avatar idle / no animation | Validate structured output contains `sentiment` tag, inspect `packages/avatar-animator` mapping, ensure FBX clips load under `public/assets/avatar/`.                                                                        |
+| No audio output            | Check ElevenLabs quota/status and inspect `/api/chat` logs (the route now performs synthesis); for missing visemes, validate the browser grants AudioContext access and wawa-lipsync attaches to the correct `AnalyserNode`. |
+| Missing LangSmith traces   | Make sure env vars exist inside container, `LANGCHAIN_TRACING_V2=true`, and outbound HTTPS access is allowed.                                                                                                                |
 
 ---
 

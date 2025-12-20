@@ -33,7 +33,10 @@ describe('ChatPanel', () => {
   });
 
   it('posts user text to the chat endpoint when sending', async () => {
-    sendChatRequestMock.mockResolvedValueOnce('Hi!');
+    sendChatRequestMock.mockResolvedValueOnce({
+      reply: 'Hi!',
+      audio: { base64: 'abc', mimeType: 'audio/mpeg' },
+    });
     render(<ChatPanel />);
 
     const textarea = screen.getByLabelText('Message');

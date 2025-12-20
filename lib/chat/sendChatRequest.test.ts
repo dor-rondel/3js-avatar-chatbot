@@ -9,14 +9,23 @@ describe('sendChatRequest', () => {
     vi.stubGlobal('fetch', fetchMock);
   });
 
-  it('returns the reply text when the request succeeds', async () => {
+  it('returns the reply payload when the request succeeds', async () => {
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ reply: 'Hello!' }), {
-        status: 200,
-      })
+      new Response(
+        JSON.stringify({
+          reply: 'Hello!',
+          audio: { base64: 'abc', mimeType: 'audio/mpeg' },
+        }),
+        {
+          status: 200,
+        }
+      )
     );
 
-    await expect(sendChatRequest('Hi')).resolves.toBe('Hello!');
+    await expect(sendChatRequest('Hi')).resolves.toEqual({
+      reply: 'Hello!',
+      audio: { base64: 'abc', mimeType: 'audio/mpeg' },
+    });
     expect(fetchMock).toHaveBeenCalledWith('/api/chat', expect.any(Object));
   });
 
