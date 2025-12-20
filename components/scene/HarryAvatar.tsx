@@ -88,7 +88,7 @@ function prepareAnimationClip(
   sanitized.name = name;
   sanitized.tracks = sanitized.tracks.filter((track) => {
     const property = track.name.split('.').pop();
-    return property !== 'position' && property !== 'scale';
+    return property !== 'scale';
   });
   return sanitized;
 }
