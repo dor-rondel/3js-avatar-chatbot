@@ -68,8 +68,6 @@ A Harry Potter–themed conversational agent that renders a fully animated 3D av
    ELEVENLABS_API_KEY=your-elevenlabs-key
    ELEVENLABS_VOICE_ID=hermione-realism
    ELEVENLABS_MODEL_ID=eleven_monolingual_v1
-   NEXT_PUBLIC_SSE_ENDPOINT=/api/chat
-   NEXT_PUBLIC_LOADING_DELAY_MS=350
    ```
 
    When LangSmith tracing is enabled, `LANGSMITH_CALLBACKS_BACKGROUND=true` lets LangChain flush telemetry asynchronously so local runs do not block or warn about foreground callbacks.
