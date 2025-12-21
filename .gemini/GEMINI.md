@@ -26,16 +26,16 @@
 
 ```
 /app                         # Next.js 16 App Router code
-   /page.tsx                  # Chat UI + 3D scene shell
-   /layout.tsx                # SEO metadata + shared providers
-   /api/chat/route.ts         # Chat endpoint (returns complete assistant turns + audio)
-/lib/langchain/             # Prompt templates, memory helpers
-/lib/langchain/memory/      # In-memory summary cache per session
-/lib/voice/                 # ElevenLabs integration helpers
-/lib/audio/                 # Client-side audio utilities (decode, playback hooks)
-/components/scene/          # React Three Fiber scene + controls
-/components/chat/           # Message list, controls, HUD
-/globals.css                # Global styles/theme tokens
+   /page.tsx                 # Chat UI + 3D scene shell
+   /layout.tsx               # SEO metadata + shared providers
+   /api/chat/route.ts        # Chat endpoint (returns complete assistant turns + audio)
+/lib/langchain/              # Prompt templates, memory helpers
+/lib/langchain/memory/       # In-memory summary cache per session
+/lib/voice/                  # ElevenLabs integration helpers
+/lib/audio/                  # Client-side audio utilities (decode, playback hooks)
+/components/scene/           # React Three Fiber scene + controls
+/components/chat/            # Message list, controls, HUD
+/globals.css                 # Global styles/theme tokens
 /public
   /assets/avatar/            # FBX meshes, textures, morph targets
 .gemini/GEMINI.md            # This file
@@ -46,7 +46,7 @@ pnpm-lock.yaml               # Locked dependency graph
 Dockerfile                   # Multi-stage build for production image
 docker-compose.yml           # Local orchestration for prod-parity testing
 .dockerignore                # Keeps Docker build context lean
-.github/workflows/ci.yml     # Pull-request checks running pnpm commands
+.github/workflows/           # Pull-request checks running pnpm commands
 ```
 
 _If a folder is missing today, assume it will exist once implementation begins. Avoid referencing files outside this structure._
@@ -73,8 +73,6 @@ LANGCHAIN_TRACING_V2=true
 ELEVENLABS_API_KEY=
 ELEVENLABS_VOICE_ID=hermione-realism
 ELEVENLABS_MODEL_ID=eleven_monolingual_v1
-NEXT_PUBLIC_SSE_ENDPOINT=/api/chat
-NEXT_PUBLIC_LOADING_DELAY_MS=350
 ```
 
 _Add more entries (e.g., asset CDN URLs) as the project evolves._
@@ -147,7 +145,7 @@ pnpm dev
 ## 6. Chat & Audio Flow
 
 - Endpoint: `POST /api/chat`
-- Request payload: { message, emotionOverride? }
+- Request payload: { message }
 - Response: JSON payload delivered once per request containing the assistant text, structured metadata (sentiment, animation cues, viseme hints, summary memory updates), and the base64-encoded ElevenLabs audio + MIME type.
 - The frontend opens a brand-new POST for each user prompt, consumes the reply + audio immediately, and pipes the decoded audio stream into wawa-lipsync (via an `AnalyserNode`) to drive the avatar mouth shapes.
 - LangChain pipeline must:
@@ -164,7 +162,7 @@ pnpm dev
 - **Lint/type**: `pnpm lint`, `pnpm typecheck`.
 - **Prettier**: `pnpm format:check` must pass; run `pnpm format` to fix.
 - **3D scene validation**: run storybook-like harness (future `pnpm storybook` script) to preview avatar animations per sentiment bucket.
-- **GitHub Actions CI** (see `.github/workflows/ci.yml`) executes `pnpm lint`, `pnpm typecheck`, `pnpm test:unit`, and `pnpm format:check` for every PR.
+- **GitHub Actions CI** (see `.github/workflows/new-pr-is-valid.yml`) executes `pnpm lint`, `pnpm typecheck`, `pnpm test:unit`, and `pnpm format:check` for every PR.
 - Keep pull requests small and focused on one concern (scene, pipeline, TTS, etc.).
 
 ---
