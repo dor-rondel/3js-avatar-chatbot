@@ -1,15 +1,8 @@
-import { z } from 'zod';
-import { SENTIMENTS } from '../expressions/facialExpressions';
-
-const replySchema = z.object({
-  reply: z.string(),
-  sentiment: z.enum(SENTIMENTS),
-  audio: z.object({
-    base64: z.string(),
-    mimeType: z.string(),
-  }),
-});
-const errorSchema = z.object({ error: z.string() });
+import {
+  chatErrorSchema,
+  chatResponseSchema,
+  type ChatResponsePayload,
+} from './types';
 
 async function safeParseJson(response: Response) {
   try {
@@ -32,9 +25,9 @@ export class ChatRequestError extends Error {
 /**
  * Sends a minimal POST request to the chat endpoint and returns the reply text.
  */
-export type ChatResponse = z.infer<typeof replySchema>;
-
-export async function sendChatRequest(message: string): Promise<ChatResponse> {
+export async function sendChatRequest(
+  message: string
+): Promise<ChatResponsePayload> {
   const response = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -43,7 +36,7 @@ export async function sendChatRequest(message: string): Promise<ChatResponse> {
 
   if (!response.ok) {
     const errorBody = await safeParseJson(response);
-    const parsed = errorBody && errorSchema.safeParse(errorBody);
+    const parsed = errorBody && chatErrorSchema.safeParse(errorBody);
     const errorMessage = parsed?.success
       ? parsed.data.error
       : 'Chat request failed.';
@@ -52,5 +45,5 @@ export async function sendChatRequest(message: string): Promise<ChatResponse> {
   }
 
   const payload = await response.json();
-  return replySchema.parse(payload);
+  return chatResponseSchema.parse(payload);
 }

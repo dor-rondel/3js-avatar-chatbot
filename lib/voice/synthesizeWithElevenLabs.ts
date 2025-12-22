@@ -1,12 +1,8 @@
 import { Buffer } from 'node:buffer';
+import { type SynthesizedAudio, type SynthesizeSpeechInput } from './types';
 
 const DEFAULT_MODEL_ID = 'eleven_monolingual_v1';
 const DEFAULT_MIME_TYPE = 'audio/mpeg';
-
-export type SynthesizedAudio = {
-  base64: string;
-  mimeType: string;
-};
 
 export class ElevenLabsConfigurationError extends Error {
   constructor(message: string) {
@@ -21,14 +17,6 @@ export class ElevenLabsSynthesisError extends Error {
     this.name = 'ElevenLabsSynthesisError';
   }
 }
-
-/**
- * Minimal payload accepted by ElevenLabs synthesis helper.
- */
-type SynthesizeSpeechInput = {
-  /** Assistant text to convert into audio. */
-  text: string;
-};
 
 function ensureEnv(value: string | undefined, message: string): string {
   if (value && value.trim().length > 0) {

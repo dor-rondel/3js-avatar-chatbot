@@ -5,19 +5,16 @@ import {
   InputSanitizationError,
   SummaryMemoryError,
   executeChat,
-} from '../../../lib/langchain/executeChat';
+} from '@/lib/langchain/executeChat';
+import { type ChatRequestPayload } from '@/lib/chat/types';
 import {
   ElevenLabsConfigurationError,
   ElevenLabsSynthesisError,
   synthesizeSpeech,
-} from '../../../lib/voice/synthesizeWithElevenLabs';
+} from '@/lib/voice/synthesizeWithElevenLabs';
 
 const GENERIC_ERROR_MESSAGE =
   'Unable to chat with Harry right now. Please retry.';
-
-type ChatRequestPayload = {
-  message?: unknown;
-};
 
 /**
  * Basic JSON POST handler that fans out to Gemini via LangChain.

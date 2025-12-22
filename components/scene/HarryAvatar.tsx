@@ -16,14 +16,14 @@ import {
   type MeshStandardMaterial,
   type SkinnedMesh,
 } from 'three';
-import { subscribeToVisemes } from '../../lib/viseme/visemeEvents';
+import { subscribeToVisemes } from '@/lib/viseme/visemeEvents';
 import {
   expressionMorphNames,
   facialExpressions,
   type ExpressionName,
   type FacialExpressionPreset,
-} from '../../lib/expressions/facialExpressions';
-import { subscribeToExpressions } from '../../lib/expressions/expressionEvents';
+} from '@/lib/expressions/facialExpressions';
+import { subscribeToExpressions } from '@/lib/expressions/expressionEvents';
 
 type GLTFResult = GLTF & {
   nodes: {

@@ -1,16 +1,4 @@
-export type VisemeEvent = {
-  /**
-   * The viseme label reported by wawa-lipsync (e.g. "viseme_PP").
-   */
-  label: string;
-  /**
-   * Seconds elapsed (according to `HTMLAudioElement.currentTime`) when the viseme fired.
-   */
-  timestamp: number;
-};
-
-// eslint-disable-next-line no-unused-vars
-export type VisemeListener = (event: VisemeEvent) => void;
+import { type VisemeEvent, type VisemeListener } from './types';
 
 const listeners = new Set<VisemeListener>();
 

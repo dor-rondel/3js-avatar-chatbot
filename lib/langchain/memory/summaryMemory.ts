@@ -8,19 +8,11 @@ import { LANGSMITH_PROJECT } from '../constants';
 import {
   buildSummarySystemPrompt,
   buildSummaryUserPrompt,
-  type SummaryPromptInput,
 } from '../prompts/summary';
 import { extractTextContent } from '../utils/extractTextContent';
+import { type SummaryUpdateInput } from '../types';
 
 let summaryMemory: string | undefined;
-
-/**
- * Structured input describing the data needed to refresh the rolling summary.
- */
-export type SummaryUpdateInput = SummaryPromptInput & {
-  apiKey: string;
-  model: string;
-};
 
 /**
  * Generic error raised when Gemini cannot produce a refreshed summary.
