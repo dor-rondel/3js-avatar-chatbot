@@ -1,249 +1,32 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, type JSX } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useAnimations, useFBX, useGLTF } from '@react-three/drei';
-import type { GLTF } from 'three-stdlib';
 import {
   Euler,
   LoopOnce,
-  MathUtils,
   Quaternion,
-  QuaternionKeyframeTrack,
   type AnimationAction,
   type AnimationClip,
   type Group,
-  type MeshStandardMaterial,
-  type SkinnedMesh,
 } from 'three';
 import { subscribeToVisemes } from '@/lib/viseme/visemeEvents';
 import {
-  expressionMorphNames,
   facialExpressions,
-  type ExpressionName,
   type FacialExpressionPreset,
 } from '@/lib/expressions/facialExpressions';
 import { subscribeToExpressions } from '@/lib/expressions/expressionEvents';
-
-type GLTFResult = GLTF & {
-  nodes: {
-    Hips: Group;
-    EyeLeft: SkinnedMesh;
-    EyeRight: SkinnedMesh;
-    Wolf3D_Head: SkinnedMesh;
-    Wolf3D_Teeth: SkinnedMesh;
-    Wolf3D_Hair: SkinnedMesh;
-    Wolf3D_Glasses: SkinnedMesh;
-    Wolf3D_Outfit_Top: SkinnedMesh;
-    Wolf3D_Outfit_Bottom: SkinnedMesh;
-    Wolf3D_Outfit_Footwear: SkinnedMesh;
-    Wolf3D_Body: SkinnedMesh;
-  };
-  materials: {
-    Wolf3D_Eye: MeshStandardMaterial;
-    Wolf3D_Skin: MeshStandardMaterial;
-    Wolf3D_Teeth: MeshStandardMaterial;
-    Wolf3D_Hair: MeshStandardMaterial;
-    Wolf3D_Glasses: MeshStandardMaterial;
-    Wolf3D_Outfit_Top: MeshStandardMaterial;
-    Wolf3D_Outfit_Bottom: MeshStandardMaterial;
-    Wolf3D_Outfit_Footwear: MeshStandardMaterial;
-    Wolf3D_Body: MeshStandardMaterial;
-  };
-};
-
-/**
- * Renders the Harry Potter GLB avatar with its rigged meshes.
- */
-type GroupProps = JSX.IntrinsicElements['group'];
-
-const GLB_PATH = '/assets/meshes/harry.glb';
-const EXPRESSION_INTENSITY = 1.25;
-
-const ANIMATION_FILES = {
-  smile: '/assets/animations/smile.fbx',
-  laugh: '/assets/animations/laugh.fbx',
-  sad: '/assets/animations/sad.fbx',
-  surprised: '/assets/animations/surprised.fbx',
-  angry: '/assets/animations/angry.fbx',
-  crazy: '/assets/animations/crazy.fbx',
-  waving: '/assets/animations/waving.fbx',
-} as const;
-
-const TRACK_PATH_DELIMITERS = /[:|]/;
-
-/**
- * Manual orientation offsets tuned by eye so expression clips face the user cleanly.
- * Adjust these values whenever the scene camera or avatar pose changes.
- */
-const ORIENTATION_OFFSETS = Object.freeze({
-  leanForwardDeg: 75,
-  twistTowardViewerDeg: 0,
-});
-
-const FORWARD_LEAN_RADIANS = MathUtils.degToRad(
-  ORIENTATION_OFFSETS.leanForwardDeg
-);
-const VIEWER_TWIST_RADIANS = MathUtils.degToRad(
-  ORIENTATION_OFFSETS.twistTowardViewerDeg
-);
-
-function neutralizeRootRotation(
-  track: QuaternionKeyframeTrack,
-  targetOrientation?: Quaternion
-) {
-  const { values } = track;
-  if (values.length < 4) {
-    return;
-  }
-
-  const baseOrientation = new Quaternion(
-    values[0],
-    values[1],
-    values[2],
-    values[3]
-  ).normalize();
-  const inverseBase = baseOrientation.clone().invert();
-  const neutralizer = targetOrientation
-    ? targetOrientation.clone().multiply(inverseBase)
-    : inverseBase;
-
-  for (let index = 0; index < values.length; index += 4) {
-    const rotation = new Quaternion(
-      values[index],
-      values[index + 1],
-      values[index + 2],
-      values[index + 3]
-    );
-    rotation.premultiply(neutralizer).normalize();
-    values[index] = rotation.x;
-    values[index + 1] = rotation.y;
-    values[index + 2] = rotation.z;
-    values[index + 3] = rotation.w;
-  }
-}
-
-/**
- * Normalizes Mixamo-style track names so they match the GLB skeleton (strip Armature/mixamorig prefixes).
- */
-function normalizeTrackName(originalName: string): string {
-  const dotIndex = originalName.indexOf('.');
-  if (dotIndex === -1) {
-    return originalName;
-  }
-
-  const rawNodePath = originalName.slice(0, dotIndex);
-  const propertyPath = originalName.slice(dotIndex + 1);
-
-  const pathSegments = rawNodePath
-    .split(TRACK_PATH_DELIMITERS)
-    .map((segment) => segment.trim())
-    .filter(Boolean);
-
-  let normalizedNode = pathSegments[pathSegments.length - 1] ?? rawNodePath;
-
-  if (normalizedNode.toLowerCase() === 'armature') {
-    normalizedNode = 'Hips';
-  }
-
-  normalizedNode = normalizedNode.replace(/^mixamorig/i, '');
-  if (!normalizedNode) {
-    normalizedNode = 'Hips';
-  }
-
-  return `${normalizedNode}.${propertyPath}`;
-}
-
-type AnimationClipName = keyof typeof ANIMATION_FILES;
-
-const CLIPS_REQUIRING_ROOT_NEUTRALIZATION: ReadonlySet<AnimationClipName> =
-  new Set(['smile', 'laugh', 'sad', 'surprised', 'angry', 'crazy']);
-
-function resolveClipForExpression(
-  expression: ExpressionName
-): AnimationClipName | null {
-  return expression in ANIMATION_FILES
-    ? (expression as AnimationClipName)
-    : null;
-}
-
-/**
- * Creates a sanitized copy of an FBX clip so we can safely mix it with the GLB skeleton.
- * Removes root transforms that would teleport/scale the avatar, then updates track names.
- */
-function prepareAnimationClip(
-  source: AnimationClip | undefined,
-  name: AnimationClipName,
-  targetRootQuaternion?: Quaternion
-): AnimationClip | null {
-  if (!source) {
-    return null;
-  }
-
-  const sanitized = source.clone();
-  sanitized.name = name;
-  sanitized.tracks = sanitized.tracks
-    .filter((track) => {
-      const property = track.name.split('.').pop();
-      const isRoot = track.name.includes('Hips');
-      if (!isRoot) {
-        return true;
-      }
-
-      return property !== 'scale' && property !== 'position';
-    })
-    .map((track) => {
-      const property = track.name.split('.').pop();
-      const isRoot = track.name.includes('Hips');
-      if (
-        CLIPS_REQUIRING_ROOT_NEUTRALIZATION.has(name) &&
-        isRoot &&
-        property === 'quaternion' &&
-        track instanceof QuaternionKeyframeTrack
-      ) {
-        neutralizeRootRotation(track, targetRootQuaternion);
-      }
-
-      track.name = normalizeTrackName(track.name);
-      return track;
-    });
-
-  return sanitized;
-}
-
-/**
- * Applies the current preset to a mesh that exposes compatible morph targets.
- */
-function blendExpressionPreset(
-  mesh: SkinnedMesh | undefined,
-  targets: FacialExpressionPreset,
-  lerpAmount: number
-) {
-  if (!mesh) {
-    return;
-  }
-
-  const dictionary = mesh.morphTargetDictionary;
-  const influences = mesh.morphTargetInfluences;
-  if (!dictionary || !influences) {
-    return;
-  }
-
-  for (const morphName of expressionMorphNames) {
-    const targetIndex = dictionary[morphName];
-    if (typeof targetIndex !== 'number') {
-      continue;
-    }
-
-    const targetValue = Math.min(
-      1,
-      Math.max(0, (targets[morphName] ?? 0) * EXPRESSION_INTENSITY)
-    );
-    const currentValue = influences[targetIndex] ?? 0;
-    const nextValue = currentValue + (targetValue - currentValue) * lerpAmount;
-    influences[targetIndex] = nextValue;
-  }
-}
+import {
+  ANIMATION_FILES,
+  FORWARD_LEAN_RADIANS,
+  GLB_PATH,
+  VIEWER_TWIST_RADIANS,
+  type AnimationClipName,
+} from './constants';
+import type { GroupProps, GLTFResult } from './types';
+import { prepareAnimationClip, resolveClipForExpression } from './animation';
+import { blendExpressionPreset } from './morphTargets';
 
 /**
  * Loads the rigged GLB avatar, surfaces its morph target dictionary for debugging,
@@ -314,9 +97,13 @@ export default function HarryAvatar(props: GroupProps) {
     ];
 
     return entries.reduce<AnimationClip[]>((clips, [name, clip]) => {
-      const sanitized = prepareAnimationClip(clip, name, targetRootQuaternion);
-      if (sanitized) {
-        clips.push(sanitized);
+      const preparedClip = prepareAnimationClip(
+        clip,
+        name,
+        targetRootQuaternion
+      );
+      if (preparedClip) {
+        clips.push(preparedClip);
       }
       return clips;
     }, []);

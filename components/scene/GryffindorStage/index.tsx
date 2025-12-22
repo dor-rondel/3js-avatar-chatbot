@@ -15,8 +15,18 @@ type GryffindorStageProps = {
   shouldSpin?: boolean;
 };
 
+/**
+ * Avatar rotation speed (radians/second) when `shouldSpin` is enabled.
+ */
 const SPIN_SPEED = 0.35;
 
+/**
+ * Applies the Gryffindor backdrop texture and lighting rig to the shared scene.
+ *
+ * @param props - Component props.
+ * @param props.shouldSpin - When true, the avatar rotates around the Y axis.
+ * @returns Scene lighting + stage content.
+ */
 export default function GryffindorStage({
   shouldSpin = false,
 }: GryffindorStageProps) {
