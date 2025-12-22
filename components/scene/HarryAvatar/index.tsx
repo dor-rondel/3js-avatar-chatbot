@@ -31,6 +31,9 @@ import { blendExpressionPreset } from './morphTargets';
 /**
  * Loads the rigged GLB avatar, surfaces its morph target dictionary for debugging,
  * and animates mouth visemes in sync with the shared `visemeEvents` bus.
+ *
+ * @param props - R3F group props passed to the avatar root.
+ * @returns The rendered avatar group.
  */
 export default function HarryAvatar(props: GroupProps) {
   const { nodes, materials } = useGLTF(GLB_PATH) as unknown as GLTFResult;

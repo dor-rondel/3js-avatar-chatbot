@@ -122,6 +122,9 @@ const SENTIMENT_TO_EXPRESSION: Record<SentimentValue, ExpressionName> = {
 
 /**
  * Resolves the preset key that should be blended when a sentiment is received.
+ *
+ * @param sentiment - Sentiment label from the LLM.
+ * @returns Facial expression preset name.
  */
 export function resolveExpressionForSentiment(
   sentiment: SentimentValue

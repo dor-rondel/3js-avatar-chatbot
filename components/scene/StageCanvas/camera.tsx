@@ -15,6 +15,10 @@ const DEFAULT_CAMERA_POSITION = CAMERA_POSITIONS.default;
 /**
  * Syncs R3F camera position to current zoom mode.
  * Updates on every mode change to keep camera aligned with user intent.
+ *
+ * @param props - Component props.
+ * @param props.mode - Current camera mode.
+ * @returns Nothing (renders no JSX).
  */
 function CameraZoomController({ mode }: { mode: CameraMode }) {
   const { camera } = useThree();

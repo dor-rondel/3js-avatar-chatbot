@@ -10,6 +10,9 @@ type ChatPanelProps = Omit<HTMLAttributes<HTMLElement>, 'children'>;
 /**
  * Renders the floating chat panel overlay that collects user prompts for Harry.
  * Currently front-end only; it forwards messages to the eventual TTS pipeline via `handleSend`.
+ *
+ * @param sectionProps - Optional props forwarded to the wrapping `section` element.
+ * @returns The chat panel UI.
  */
 export function ChatPanel(sectionProps: ChatPanelProps = {}) {
   const { playResponseAudio } = useChatAudioPlayback();
@@ -17,6 +20,9 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
   /**
    * Sends the prompt to the chat API, converts the returned base64 audio into a playable source,
    * and hands the element to the lipsync pipeline.
+   *
+   * @param text - User prompt text.
+   * @returns Resolves when playback has been started.
    */
   const handleSend = useCallback(
     async (text: string) => {

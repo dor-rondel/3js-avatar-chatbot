@@ -2,6 +2,9 @@ import type { AIMessage } from '@langchain/core/messages';
 
 /**
  * Normalizes Gemini's flexible message payloads into a plain string.
+ *
+ * @param message - LangChain AI message.
+ * @returns Extracted plain text (empty string when missing).
  */
 export function extractTextContent(message: AIMessage): string {
   if (typeof message.content === 'string') {

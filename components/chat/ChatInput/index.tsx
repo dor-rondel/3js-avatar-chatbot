@@ -16,6 +16,11 @@ type ChatInputProps = {
 
 /**
  * Autogrowing textarea with send button + Enter shortcut.
+ *
+ * @param props - Component props.
+ * @param props.placeholder - Optional placeholder text for the textarea.
+ * @param props.onSend - Called with the trimmed message when the user sends.
+ * @returns The chat input UI.
  */
 export function ChatInput({ placeholder, onSend }: ChatInputProps) {
   const [message, setMessage] = useState('');

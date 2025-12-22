@@ -24,6 +24,9 @@ export class ChatRequestError extends Error {
 
 /**
  * Sends a minimal POST request to the chat endpoint and returns the reply text.
+ *
+ * @param message - User prompt text.
+ * @returns Parsed chat payload including reply, sentiment, and audio.
  */
 export async function sendChatRequest(
   message: string

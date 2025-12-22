@@ -1,6 +1,9 @@
 /**
  * Decodes a base64-encoded audio string into an ArrayBuffer so it can be
  * consumed by the Web Audio API.
+ *
+ * @param base64 - Base64-encoded audio string.
+ * @returns The decoded bytes as an ArrayBuffer.
  */
 export function decodeBase64Audio(base64: string): ArrayBuffer {
   const sanitized = base64.replace(/\s+/g, '');

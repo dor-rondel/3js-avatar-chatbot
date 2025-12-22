@@ -3,6 +3,12 @@ import { type ExpressionListener } from './types';
 
 const listeners = new Set<ExpressionListener>();
 
+/**
+ * Broadcasts an expression change to every subscribed listener.
+ *
+ * @param expression - Expression preset name to activate.
+ * @returns Nothing.
+ */
 export function emitExpression(expression: ExpressionName) {
   listeners.forEach((listener) => {
     try {
@@ -14,6 +20,12 @@ export function emitExpression(expression: ExpressionName) {
   });
 }
 
+/**
+ * Subscribes a listener to expression change events.
+ *
+ * @param listener - Callback invoked whenever an expression is emitted.
+ * @returns Unsubscribe function.
+ */
 export function subscribeToExpressions(listener: ExpressionListener) {
   listeners.add(listener);
   return () => {
