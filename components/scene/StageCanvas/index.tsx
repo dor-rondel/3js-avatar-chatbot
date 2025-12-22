@@ -2,9 +2,9 @@
 
 import { Activity, Suspense, useEffect, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import GryffindorStage from './GryffindorStage';
-import { CanvasLoader } from './CanvasLoader';
-import { ChatPanel } from '../chat/ChatPanel';
+import GryffindorStage from '../GryffindorStage';
+import { CanvasLoader } from '../CanvasLoader';
+import { ChatPanel } from '@/components/chat/ChatPanel';
 
 type CameraMode = 'default' | 'wide';
 

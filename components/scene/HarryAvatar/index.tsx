@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, type JSX } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useGLTF, useFBX, useAnimations } from '@react-three/drei';
+import { useAnimations, useFBX, useGLTF } from '@react-three/drei';
 import type { GLTF } from 'three-stdlib';
 import {
   Euler,
@@ -10,8 +10,8 @@ import {
   MathUtils,
   Quaternion,
   QuaternionKeyframeTrack,
-  type AnimationClip,
   type AnimationAction,
+  type AnimationClip,
   type Group,
   type MeshStandardMaterial,
   type SkinnedMesh,
