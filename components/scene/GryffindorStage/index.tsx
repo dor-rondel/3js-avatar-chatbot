@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
-import { Stage, useTexture } from '@react-three/drei';
-import { SRGBColorSpace, type Texture, type Scene, type Group } from 'three';
+import { useRef } from 'react';
+import { Stage } from '@react-three/drei';
+import type { Group } from 'three';
 import HarryAvatar from '../HarryAvatar';
+import { useAvatarSpin } from './useAvatarSpin';
+import { useSceneBackgroundTexture } from './useSceneBackgroundTexture';
 
 /**
  * Applies the Gryffindor backdrop texture and lighting rig to the shared scene.
@@ -30,70 +31,15 @@ const SPIN_SPEED = 0.35;
 export default function GryffindorStage({
   shouldSpin = false,
 }: GryffindorStageProps) {
-  const scene = useThree((state) => state.scene);
-  const sceneRef = useRef<Scene | null>(scene);
   const avatarGroupRef = useRef<Group | null>(null);
-  /** Ref tracks spin state so useFrame reads latest value without re-registering. */
-  const spinStateRef = useRef(shouldSpin);
-  const texture = useTexture('/assets/textures/Gryffindor.jpg') as Texture;
 
-  useEffect(() => {
-    sceneRef.current = scene;
-  }, [scene]);
+  useSceneBackgroundTexture('/assets/textures/Gryffindor.jpg');
 
-  useEffect(() => {
-    spinStateRef.current = shouldSpin;
-    const avatarGroup = avatarGroupRef.current;
-    // Reset rotation when spin disabled so avatar faces forward.
-    if (!shouldSpin && avatarGroup?.rotation) {
-      // eslint-disable-next-line id-length
-      avatarGroup.rotation.y = 0;
-    }
-  }, [shouldSpin]);
-
-  // eslint-disable-next-line id-length
-  useFrame((_, delta) => {
-    const avatarGroup = avatarGroupRef.current;
-    if (!avatarGroup || !avatarGroup.rotation) {
-      return;
-    }
-
-    if (!spinStateRef.current) {
-      return;
-    }
-
-    // Continuous Y-axis rotation anchored at origin.
-    // eslint-disable-next-line id-length
-    avatarGroup.rotation.y =
-      (avatarGroup.rotation.y + delta * SPIN_SPEED) % (Math.PI * 2);
+  useAvatarSpin({
+    groupRef: avatarGroupRef,
+    shouldSpin,
+    spinSpeed: SPIN_SPEED,
   });
-
-  const preparedTexture = useMemo(() => {
-    if (!texture) {
-      return null;
-    }
-
-    // Clone so we can adjust color space without mutating Drei's cache.
-    const cloned = texture.clone();
-    cloned.colorSpace = SRGBColorSpace;
-    return cloned;
-  }, [texture]);
-
-  useEffect(() => {
-    const currentScene = sceneRef.current;
-
-    if (!currentScene || !preparedTexture) {
-      return undefined;
-    }
-
-    const previousBackground = currentScene.background;
-    currentScene.background = preparedTexture;
-
-    return () => {
-      currentScene.background = previousBackground;
-      preparedTexture.dispose();
-    };
-  }, [preparedTexture]);
 
   return (
     <>
