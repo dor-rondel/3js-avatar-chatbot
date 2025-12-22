@@ -97,7 +97,11 @@ export default function HarryAvatar(props: GroupProps) {
     ];
 
     return entries.reduce<AnimationClip[]>((clips, [name, clip]) => {
-      const preparedClip = prepareAnimationClip(clip, name, targetRootQuaternion);
+      const preparedClip = prepareAnimationClip(
+        clip,
+        name,
+        targetRootQuaternion
+      );
       if (preparedClip) {
         clips.push(preparedClip);
       }
