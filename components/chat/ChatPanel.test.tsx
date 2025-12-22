@@ -99,7 +99,7 @@ const {
   };
 });
 
-vi.mock('../../lib/chat/sendChatRequest', () => ({
+vi.mock('@/lib/chat/sendChatRequest', () => ({
   sendChatRequest: sendChatRequestMock,
 }));
 
@@ -107,11 +107,11 @@ vi.mock('wawa-lipsync', () => ({
   Lipsync: LipsyncMock,
 }));
 
-vi.mock('../../lib/viseme/visemeEvents', () => ({
+vi.mock('@/lib/viseme/visemeEvents', () => ({
   emitViseme: emitVisemeMock,
 }));
 
-vi.mock('../../lib/expressions/expressionEvents', () => ({
+vi.mock('@/lib/expressions/expressionEvents', () => ({
   emitExpression: emitExpressionMock,
 }));
 

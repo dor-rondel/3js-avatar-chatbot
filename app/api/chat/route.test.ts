@@ -31,7 +31,7 @@ const {
   };
 });
 
-vi.mock('../../../lib/langchain/executeChat', () => ({
+vi.mock('@/lib/langchain/executeChat', () => ({
   executeChat: executeChatMock,
   InputSanitizationError,
   ConfigurationError,
@@ -39,7 +39,7 @@ vi.mock('../../../lib/langchain/executeChat', () => ({
   SummaryMemoryError,
 }));
 
-vi.mock('../../../lib/voice/synthesizeWithElevenLabs', () => ({
+vi.mock('@/lib/voice/synthesizeWithElevenLabs', () => ({
   synthesizeSpeech: synthesizeSpeechMock,
   ElevenLabsConfigurationError,
   ElevenLabsSynthesisError,

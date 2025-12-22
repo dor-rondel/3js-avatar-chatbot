@@ -1,7 +1,5 @@
 import type { ExpressionName } from './facialExpressions';
-
-// eslint-disable-next-line no-unused-vars
-type ExpressionListener = (expression: ExpressionName) => void;
+import { type ExpressionListener } from './types';
 
 const listeners = new Set<ExpressionListener>();
 

@@ -9,13 +9,11 @@ import { z } from 'zod';
 import { buildSystemPrompt } from './prompts/system';
 import { buildUserPrompt } from './prompts/user';
 import { sanitizeUserMessage } from './safety/sanitizeInput';
-import {
-  SENTIMENTS,
-  type SentimentValue,
-} from '../expressions/facialExpressions';
+import { SENTIMENTS } from '../expressions/facialExpressions';
 import { DEFAULT_GEMINI_MODEL, LANGSMITH_PROJECT } from './constants';
 import { extractTextContent } from './utils/extractTextContent';
 import { getSummaryMemory, rebuildSummaryMemory } from './memory/summaryMemory';
+import { type ExecuteChatInput, type ExecuteChatResult } from './types';
 
 /**
  * Picks the preferred Gemini model, honoring an override via env variable.
@@ -26,16 +24,6 @@ function resolveGeminiModel(): string {
     ? configured
     : DEFAULT_GEMINI_MODEL;
 }
-
-export type ExecuteChatInput = {
-  message: string;
-  summary?: string;
-};
-
-export type ExecuteChatResult = {
-  reply: string;
-  sentiment: SentimentValue;
-};
 
 export class ConfigurationError extends Error {
   constructor(message: string) {
