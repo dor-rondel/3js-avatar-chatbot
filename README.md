@@ -131,9 +131,16 @@ docker pull ghcr.io/<github-username>/3js-avatar-chatbot:latest
 - `pnpm build`: Create an optimized production build.
 - `pnpm start`: Serve the production build.
 - `pnpm lint`: Run ESLint.
-- `pnpm typecheck`: Run TypeScript in build mode.
+- `pnpm typecheck`: Run TypeScript typecheck.
 - `pnpm test:unit`: Execute Vitest unit tests.
 - `pnpm format`: Format files with Prettier.
 - `pnpm format:check`: Verify formatting (used in CI).
 
-For a full project playbook (Docker, chat/voice expectations, testing standards), see .gemini/GEMINI.md.
+## Repository Layout (High Level)
+
+- `app/`: Next.js App Router pages + route handlers.
+- `components/chat/*`: Chat UI components (component-per-folder: `index.tsx` + `index.test.tsx`).
+- `components/scene/*`: 3D scene components (component-per-folder; `StageCanvas` contains shared camera logic).
+- `lib/*`: Shared non-UI helpers (LangChain pipeline, audio helpers, viseme/expression event emitters).
+
+For a full project playbook (Docker, chat/voice expectations, testing standards), see [.gemini/GEMINI.md](.gemini/GEMINI.md).

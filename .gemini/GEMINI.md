@@ -32,14 +32,14 @@
 /lib/langchain/              # Prompt templates, memory helpers
 /lib/langchain/memory/       # In-memory summary cache per session
 /lib/voice/                  # ElevenLabs integration helpers
-/lib/audio/                  # Client-side audio utilities (decode, playback hooks)
-/components/scene/           # React Three Fiber scene + controls
-/components/chat/            # Message list, controls, HUD
-/globals.css                 # Global styles/theme tokens
+/lib/audio/                  # Client-side audio utilities (base64 decode/src, playback helpers)
+/components/scene/           # React Three Fiber scene + controls (component-per-folder)
+/components/chat/            # Chat UI components (component-per-folder)
+/app/globals.css             # Global styles/theme tokens
 /public
-  /assets/avatar/            # FBX meshes, textures, morph targets
+   /assets/                  # 3D assets (animations/meshes/textures)
 .gemini/GEMINI.md            # This file
-.env.example                 # Template for local secrets
+.env.local.example           # Template for local secrets
 .prettierrc                  # Formatting contract
 package.json                 # pnpm scripts consumed locally + CI
 pnpm-lock.yaml               # Locked dependency graph
@@ -95,8 +95,9 @@ _Add more entries (e.g., asset CDN URLs) as the project evolves._
    pnpm test:unit    # Vitest
    ```
 4. **Prepare assets**
-   - Place FBX meshes, textures, and morph targets under `public/assets/avatar/`.
-   - Store reusable animation metadata inside feature-level directories (e.g., `app/(chat)/__mocks__/animations.test-data.ts`).
+   - Place animation files under `public/assets/animations/`.
+   - Place meshes under `public/assets/meshes/` and textures under `public/assets/textures/`.
+   - Keep any test data close to the tests that use it.
 5. **Formatting contract**
    ```bash
    pnpm format        # Applies prettier rules (.prettierrc)
@@ -171,6 +172,8 @@ pnpm dev
 
 - Group code by **feature** (chat, avatar, audio) instead of file type; colocate UI, hooks, and tests where possible.
 - Co-locate unit tests with the component or module using the `.test.ts` suffix.
+- Prefer a **component-per-folder** convention under `components/*` (e.g., `components/chat/ChatPanel/index.tsx` + `index.test.tsx`).
+- Keep feature-specific hooks alongside their feature (e.g., `components/chat/ChatPanel/useChatAudioPlayback.ts`).
 - Keep Server Actions minimal and focused; prefer route handlers for API edges.
 - Clearly separate UI components from business logic (e.g., presentational vs data hooks).
 - Enforce Prettier for every file according to `.prettierrc`.
@@ -225,7 +228,7 @@ Avoid overthinking:
 | Symptom                    | Checks                                                                                                                                                                                                                       |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | No chat response returns   | Confirm `POST /api/chat` requests resolve (check `docker compose logs -f app`), ensure the LangChain pipeline is not throwing, and validate the client awaits the JSON payload before calling ElevenLabs.                    |
-| Avatar idle / no animation | Validate structured output contains `sentiment` tag, inspect `packages/avatar-animator` mapping, ensure FBX clips load under `public/assets/avatar/`.                                                                        |
+| Avatar idle / no animation | Validate structured output contains a `sentiment` tag, ensure sentiment→expression mapping is correct, and confirm animation assets exist under `public/assets/animations/`.                                                 |
 | No audio output            | Check ElevenLabs quota/status and inspect `/api/chat` logs (the route now performs synthesis); for missing visemes, validate the browser grants AudioContext access and wawa-lipsync attaches to the correct `AnalyserNode`. |
 | Missing LangSmith traces   | Make sure env vars exist inside container, `LANGCHAIN_TRACING_V2=true`, and outbound HTTPS access is allowed.                                                                                                                |
 
