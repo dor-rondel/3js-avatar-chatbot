@@ -15,7 +15,7 @@ type ZoomButtonProps = {
  */
 export default function ZoomButton({ isZoomedOut, onToggle }: ZoomButtonProps) {
   return (
-    <div className="pointer-events-none absolute inset-y-0 right-6 flex items-center">
+    <div className="pointer-events-none absolute right-6 top-[10vh]">
       <button
         type="button"
         className="pointer-events-auto rounded-full border border-white/25 bg-slate-950/80 px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-2xl backdrop-blur"

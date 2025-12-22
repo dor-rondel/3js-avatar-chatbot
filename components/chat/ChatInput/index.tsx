@@ -71,7 +71,7 @@ export function ChatInput({ placeholder, onSend }: ChatInputProps) {
     <div className="flex items-end gap-3">
       <textarea
         ref={textareaRef}
-        className="min-h-[42px] max-h-40 flex-1 resize-none rounded-2xl border border-white/20 bg-slate-950/60 px-4 py-3 text-sm text-white shadow-inner outline-none transition focus:border-amber-300 focus:shadow-[0_0_0_1px_rgba(251,191,36,0.4)] disabled:cursor-not-allowed disabled:opacity-60"
+        className="no-scrollbar min-h-[42px] max-h-40 flex-1 resize-none overflow-y-auto rounded-2xl border border-white/20 bg-slate-950/60 px-4 py-3 text-sm text-white shadow-inner outline-none transition focus:border-amber-300 focus:shadow-[0_0_0_1px_rgba(251,191,36,0.4)] disabled:cursor-not-allowed disabled:opacity-60"
         placeholder={placeholder}
         value={message}
         onChange={(event) => setMessage(event.target.value)}
