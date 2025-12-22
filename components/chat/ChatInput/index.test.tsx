@@ -6,7 +6,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { ChatInput } from './ChatInput';
+import { ChatInput } from '.';
 
 describe('ChatInput', () => {
   it('autogrows the textarea as text expands', async () => {

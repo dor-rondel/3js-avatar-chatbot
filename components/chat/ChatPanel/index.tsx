@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, type HTMLAttributes } from 'react';
 import { Lipsync } from 'wawa-lipsync';
-import { ChatInput } from './ChatInput';
+import { ChatInput } from '../ChatInput';
 import { sendChatRequest } from '@/lib/chat/sendChatRequest';
 import { decodeBase64Audio } from '@/lib/audio/decodeBase64Audio';
 import { emitViseme } from '@/lib/viseme/visemeEvents';

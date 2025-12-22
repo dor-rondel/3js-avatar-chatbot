@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import StageCanvas from './StageCanvas';
+import StageCanvas from '.';
 
 const { mockUseThree, gryffindorStageMock } = vi.hoisted(() => ({
   mockUseThree: vi.fn(),
@@ -19,11 +19,11 @@ vi.mock('@react-three/fiber', () => ({
   useThree: mockUseThree,
 }));
 
-vi.mock('./CanvasLoader', () => ({
+vi.mock('../CanvasLoader', () => ({
   CanvasLoader: () => <div data-testid="mock-canvas-loader">loading</div>,
 }));
 
-vi.mock('./GryffindorStage', () => ({
+vi.mock('../GryffindorStage', () => ({
   __esModule: true,
   default: gryffindorStageMock,
 }));

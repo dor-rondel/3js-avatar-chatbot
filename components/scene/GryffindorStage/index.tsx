@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Stage, useTexture } from '@react-three/drei';
 import { SRGBColorSpace, type Texture, type Scene, type Group } from 'three';
-import HarryAvatar from './HarryAvatar';
+import HarryAvatar from '../HarryAvatar';
 
 /**
  * Applies the Gryffindor backdrop texture and lighting rig to the shared scene.

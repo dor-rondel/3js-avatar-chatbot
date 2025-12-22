@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { SRGBColorSpace, type Scene, type Texture } from 'three';
-import GryffindorStage from './GryffindorStage';
+import GryffindorStage from '.';
 import { useTexture } from '@react-three/drei';
 
 const mockScene = { background: null } as unknown as Scene;
@@ -29,7 +29,7 @@ vi.mock('@react-three/drei', () => ({
   ),
 }));
 
-vi.mock('./HarryAvatar', () => ({
+vi.mock('../HarryAvatar', () => ({
   __esModule: true,
   default: () => <div data-testid="harry-avatar">avatar</div>,
 }));

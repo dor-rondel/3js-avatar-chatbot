@@ -14,7 +14,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import type { ChatPanel as ChatPanelComponentType } from './ChatPanel';
+import type { ChatPanel as ChatPanelComponentType } from '.';
 
 const {
   sendChatRequestMock,
@@ -138,7 +138,7 @@ const requestAnimationFrameMock = vi.fn((cb: RafCallback) => {
 const cancelAnimationFrameMock = vi.fn();
 
 beforeAll(async () => {
-  ({ ChatPanel: ChatPanelComponent } = await import('./ChatPanel'));
+  ({ ChatPanel: ChatPanelComponent } = await import('.'));
 
   Object.defineProperty(globalThis, 'Audio', {
     configurable: true,
