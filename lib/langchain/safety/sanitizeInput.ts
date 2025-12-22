@@ -17,6 +17,10 @@ export class InputSanitizationError extends Error {
 
 /**
  * Normalizes user input and rejects common prompt-injection phrasing.
+ *
+ * @param input - User-provided message.
+ * @returns Sanitized message string.
+ * @throws {InputSanitizationError} When the message is invalid or suspicious.
  */
 export function sanitizeUserMessage(input: unknown): string {
   if (typeof input !== 'string') {

@@ -15,6 +15,8 @@ import ZoomButton from '../ZoomButton';
 /**
  * Hosts the full-bleed React Three Fiber canvas that the Gryffindor stage renders into.
  * Manages zoom state: default (close-up, chat visible) vs wide (panoramic, chat hidden, avatar spins).
+ *
+ * @returns Fullscreen canvas + overlays.
  */
 export default function StageCanvas() {
   const [cameraMode, setCameraMode] = useState<CameraMode>('default');

@@ -18,6 +18,9 @@ const GENERIC_ERROR_MESSAGE =
 
 /**
  * Basic JSON POST handler that fans out to Gemini via LangChain.
+ *
+ * @param request - Incoming request.
+ * @returns JSON response containing reply, sentiment, and audio (or an error).
  */
 export async function POST(request: Request) {
   let payload: ChatRequestPayload;

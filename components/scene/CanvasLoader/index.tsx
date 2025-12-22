@@ -2,6 +2,8 @@ import { Html } from '@react-three/drei';
 
 /**
  * Fullscreen Drei `Html` overlay used as the Three.js loading fallback.
+ *
+ * @returns The loading overlay.
  */
 export function CanvasLoader() {
   return (

@@ -17,6 +17,8 @@ import { type ExecuteChatInput, type ExecuteChatResult } from './types';
 
 /**
  * Picks the preferred Gemini model, honoring an override via env variable.
+ *
+ * @returns Gemini model id.
  */
 function resolveGeminiModel(): string {
   const configured = process.env.GEMINI_MODEL?.trim();
@@ -57,6 +59,9 @@ const chatResponseParser =
 
 /**
  * Calls Gemini Flash 2.5 through LangChain after performing local safeguards.
+ *
+ * @param input - Chat execution inputs.
+ * @returns Assistant reply text and sentiment label.
  */
 export async function executeChat({
   message,
