@@ -30,8 +30,14 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
         const { audio, sentiment } = await sendChatRequest(text);
         await playResponseAudio({ audio, sentiment });
       } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Chat request failed:', error);
+        if (
+          typeof window !== 'undefined' &&
+          typeof window.alert === 'function'
+        ) {
+          window.alert('Something went wrong. Please try again.');
+        }
+
+        throw error;
       }
     },
     [playResponseAudio]

@@ -101,6 +101,7 @@ const {
 
 vi.mock('@/lib/chat/sendChatRequest', () => ({
   sendChatRequest: sendChatRequestMock,
+  ChatRequestError: class ChatRequestError extends Error {},
 }));
 
 vi.mock('wawa-lipsync', () => ({
@@ -295,5 +296,43 @@ describe('ChatPanel', () => {
       timestamp: 0,
     });
     expect(emitExpressionMock).toHaveBeenLastCalledWith('default');
+  });
+
+  it('alerts and keeps the message when the request fails', async () => {
+    const alertMock = vi.fn();
+    const originalAlert = globalThis.alert;
+    Object.defineProperty(globalThis, 'alert', {
+      configurable: true,
+      value: alertMock,
+    });
+
+    sendChatRequestMock.mockRejectedValueOnce(new Error('Boom'));
+    renderChatPanel();
+
+    const textarea = screen.getByLabelText('Message') as HTMLTextAreaElement;
+    const sendButton = screen.getByRole('button', { name: /send/i });
+
+    await act(async () => {
+      fireEvent.change(textarea, { target: { value: 'Alohomora' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(sendButton);
+    });
+
+    await waitFor(() => {
+      expect(alertMock).toHaveBeenCalled();
+    });
+
+    expect(textarea.value).toBe('Alohomora');
+
+    if (originalAlert) {
+      Object.defineProperty(globalThis, 'alert', {
+        configurable: true,
+        value: originalAlert,
+      });
+    } else {
+      Reflect.deleteProperty(globalThis, 'alert');
+    }
   });
 });
