@@ -7,8 +7,8 @@ A Harry Potter–themed conversational agent that renders a fully animated 3D av
 ## Features
 
 - Cinematic 3D avatar with zoom controls, sentiment-driven facial blends, and FBX idle/talking loops.
-- LangChain pipeline that calls Gemini for structured outputs (text, sentiment, viseme hints) with short-lived memory.
-- Guardrail layer that sanitizes prompts and blocks common prompt-injection attempts before invoking Gemini.
+- LangChain pipeline that calls Groq for structured outputs (text, sentiment, viseme hints) with short-lived memory.
+- Guardrail layer that sanitizes prompts and blocks common prompt-injection attempts before invoking Groq.
 - ElevenLabs streaming route handler plus a client-side [wawa-lipsync](https://github.com/wass08/wawa-lipsync) harness that taps a browser `AnalyserNode` for real-time viseme cues.
 - Low-latency chat endpoint that returns the full assistant turn plus a base64 ElevenLabs audio payload for each POST, allowing the browser to kick off playback and wawa-lipsync without SSE token streams.
 - LangSmith tracing wired through Docker for end-to-end observability.
@@ -19,7 +19,7 @@ A Harry Potter–themed conversational agent that renders a fully animated 3D av
 - **Framework**: Next.js 16 (App Router, full-stack)
 - **Language**: TypeScript (strict)
 - **3D Rendering**: React Three Fiber + Drei
-- **LLM Orchestration**: LangChain w/ Gemini API, Prompts, and Memory
+- **LLM Orchestration**: LangChain w/ Groq API, Prompts, and Memory
 - **Speech & Visemes**: ElevenLabs API + browser-based wawa-lipsync
 - **Styling**: Tailwind CSS + custom Hogwarts-inspired design tokens
 - **Testing**: Vitest + React Testing Library
@@ -32,7 +32,7 @@ A Harry Potter–themed conversational agent that renders a fully animated 3D av
 
 - Node.js >= 20.x
 - pnpm
-- Gemini API key
+- Groq API key
 - LangSmith API key + project
 - ElevenLabs API key plus a configured voice profile (Realtime or streaming HTTP)
 - Browser support for Web Audio (`AnalyserNode`) so wawa-lipsync can derive visemes client-side
@@ -58,8 +58,8 @@ A Harry Potter–themed conversational agent that renders a fully animated 3D av
 5. Populate secrets in `.env.local` (example):
 
    ```
-   GEMINI_API_KEY=your-gemini-key
-   GEMINI_MODEL=gemini-2.5-flash
+   GROQ_API_KEY=your-groq-key
+   GROQ_MODEL=llama-3.3-70b-versatile
    LANGSMITH_API_KEY=your-langsmith-key
    LANGSMITH_ENDPOINT=https://api.smith.langchain.com
    LANGSMITH_CALLBACKS_BACKGROUND=true

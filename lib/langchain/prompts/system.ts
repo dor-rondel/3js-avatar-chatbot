@@ -1,5 +1,5 @@
 /**
- * Provides the base system instructions shared with every Gemini call.
+ * Provides the base system instructions shared with every LLM call.
  *
  * The copy keeps the avatar grounded in the Harry Potter universe while
  * reinforcing the structured response contract we expect from LangChain.

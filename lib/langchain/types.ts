@@ -11,7 +11,4 @@ export type ExecuteChatResult = {
   sentiment: SentimentValue;
 };
 
-export type SummaryUpdateInput = SummaryPromptInput & {
-  apiKey: string;
-  model: string;
-};
+export type SummaryUpdateInput = SummaryPromptInput;

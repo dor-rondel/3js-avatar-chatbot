@@ -7,7 +7,7 @@ export type SummaryPromptInput = {
 };
 
 /**
- * System instructions for Gemini when rebuilding the rolling conversation summary.
+ * System instructions for the model when rebuilding the rolling conversation summary.
  */
 export function buildSummarySystemPrompt(): string {
   return 'You are a diligent note-taker who maintains a concise recap of a chat between Harry Potter and a guest.';

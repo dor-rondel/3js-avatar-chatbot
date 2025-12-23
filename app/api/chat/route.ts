@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import {
   ConfigurationError,
-  GeminiResponseError,
+  GroqResponseError,
   InputSanitizationError,
   SummaryMemoryError,
   executeChat,
@@ -17,7 +17,7 @@ const GENERIC_ERROR_MESSAGE =
   'Unable to chat with Harry right now. Please retry.';
 
 /**
- * Basic JSON POST handler that fans out to Gemini via LangChain.
+ * Basic JSON POST handler that fans out to Groq via LangChain.
  *
  * @param request - Incoming request.
  * @returns JSON response containing reply, sentiment, and audio (or an error).
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     }
 
     if (
-      error instanceof GeminiResponseError ||
+      error instanceof GroqResponseError ||
       error instanceof ElevenLabsSynthesisError ||
       error instanceof SummaryMemoryError
     ) {
