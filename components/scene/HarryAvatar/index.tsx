@@ -305,40 +305,62 @@ export default function HarryAvatar(props: GroupProps) {
       mixer.update(delta);
     }
 
-    const headMesh = nodes.Wolf3D_Head;
-    const dictionary = headMesh.morphTargetDictionary;
-    const influences = headMesh.morphTargetInfluences;
-    if (!dictionary || !influences) {
-      return;
-    }
+    type MorphTargetCarrier = {
+      morphTargetDictionary?: Record<string, number> | null;
+      morphTargetInfluences?: number[] | null;
+    };
 
-    const damping = Math.exp(-delta * 18);
-    for (let index = 0; index < influences.length; index += 1) {
-      if (snapToSilenceRef.current) {
-        influences[index] = 0;
-      } else {
-        influences[index] *= damping;
+    const applyVisemeMorphTargets = (
+      mesh: MorphTargetCarrier,
+      isSnappingToSilence: boolean,
+      damping: number
+    ) => {
+      const dictionary = mesh.morphTargetDictionary;
+      const influences = mesh.morphTargetInfluences;
+      if (!dictionary || !influences) {
+        return;
       }
-    }
 
-    const snappedToSilence = snapToSilenceRef.current;
-    if (snappedToSilence) {
-      snapToSilenceRef.current = false;
-    } else {
-      const nextViseme = activeVisemeRef.current;
-      if (nextViseme) {
-        const targetIndex = dictionary[nextViseme];
-        if (typeof targetIndex === 'number') {
-          const boost = 1 - damping;
-          const nextValue = influences[targetIndex] + boost;
-          influences[targetIndex] = nextValue > 1 ? 1 : nextValue;
+      for (let index = 0; index < influences.length; index += 1) {
+        if (isSnappingToSilence) {
+          influences[index] = 0;
+        } else {
+          influences[index] *= damping;
         }
       }
+
+      if (isSnappingToSilence) {
+        return;
+      }
+
+      const nextViseme = activeVisemeRef.current;
+      if (!nextViseme) {
+        return;
+      }
+
+      const targetIndex = dictionary[nextViseme];
+      if (typeof targetIndex !== 'number') {
+        return;
+      }
+
+      const boost = 1 - damping;
+      const nextValue = influences[targetIndex] + boost;
+      influences[targetIndex] = nextValue > 1 ? 1 : nextValue;
+    };
+
+    const damping = Math.exp(-delta * 18);
+
+    const snappedToSilence = snapToSilenceRef.current;
+    applyVisemeMorphTargets(nodes.Wolf3D_Head, snappedToSilence, damping);
+    applyVisemeMorphTargets(nodes.Wolf3D_Teeth, snappedToSilence, damping);
+
+    if (snappedToSilence) {
+      snapToSilenceRef.current = false;
     }
 
     const expressionTargets = expressionPresetRef.current;
     const expressionLerp = 1 - Math.exp(-delta * 6);
-    blendExpressionPreset(headMesh, expressionTargets, expressionLerp);
+    blendExpressionPreset(nodes.Wolf3D_Head, expressionTargets, expressionLerp);
     blendExpressionPreset(
       nodes.Wolf3D_Teeth,
       expressionTargets,
