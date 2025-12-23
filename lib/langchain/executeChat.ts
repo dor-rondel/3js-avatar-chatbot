@@ -10,7 +10,7 @@ import { buildSystemPrompt } from './prompts/system';
 import { buildUserPrompt } from './prompts/user';
 import { sanitizeUserMessage } from './safety/sanitizeInput';
 import { SENTIMENTS } from '../expressions/facialExpressions';
-import { DEFAULT_GROQ_MODEL, LANGSMITH_PROJECT } from './constants';
+import { DEFAULT_GROQ_MODEL, resolveLangSmithProject } from './constants';
 import { extractTextContent } from './utils/extractTextContent';
 import { getSummaryMemory, rebuildSummaryMemory } from './memory/summaryMemory';
 import { type ExecuteChatInput, type ExecuteChatResult } from './types';
@@ -70,8 +70,12 @@ export async function executeChat({
     throw new ConfigurationError('GROQ_API_KEY must be configured.');
   }
 
+  const resolvedProject = resolveLangSmithProject();
+  if (!process.env.LANGCHAIN_PROJECT) {
+    process.env.LANGCHAIN_PROJECT = resolvedProject;
+  }
   if (!process.env.LANGSMITH_PROJECT) {
-    process.env.LANGSMITH_PROJECT = LANGSMITH_PROJECT;
+    process.env.LANGSMITH_PROJECT = resolvedProject;
   }
 
   const sanitizedMessage = sanitizeUserMessage(message);
@@ -98,7 +102,7 @@ export async function executeChat({
     ],
     {
       metadata: {
-        project: LANGSMITH_PROJECT,
+        project: resolvedProject,
         source: 'executeChat',
       },
     }

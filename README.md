@@ -63,6 +63,7 @@ A Harry Potter–themed conversational agent that renders a fully animated 3D av
    LANGSMITH_API_KEY=your-langsmith-key
    LANGSMITH_ENDPOINT=https://api.smith.langchain.com
    LANGSMITH_CALLBACKS_BACKGROUND=true
+   LANGCHAIN_PROJECT=harry-potter-3d-chatbot
    LANGSMITH_PROJECT=harry-potter-3d-chatbot
    LANGCHAIN_TRACING_V2=true
    ELEVENLABS_API_KEY=your-elevenlabs-key

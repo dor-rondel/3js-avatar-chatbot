@@ -4,7 +4,7 @@ import {
   SystemMessage,
   type AIMessage,
 } from '@langchain/core/messages';
-import { DEFAULT_GROQ_MODEL, LANGSMITH_PROJECT } from '../constants';
+import { DEFAULT_GROQ_MODEL, resolveLangSmithProject } from '../constants';
 import {
   buildSummarySystemPrompt,
   buildSummaryUserPrompt,
@@ -49,6 +49,14 @@ export async function rebuildSummaryMemory(
     throw new SummaryMemoryError('GROQ_API_KEY must be configured.');
   }
 
+  const resolvedProject = resolveLangSmithProject();
+  if (!process.env.LANGCHAIN_PROJECT) {
+    process.env.LANGCHAIN_PROJECT = resolvedProject;
+  }
+  if (!process.env.LANGSMITH_PROJECT) {
+    process.env.LANGSMITH_PROJECT = resolvedProject;
+  }
+
   const model = process.env.GROQ_MODEL?.trim() || DEFAULT_GROQ_MODEL;
 
   const previousSummary =
@@ -76,7 +84,7 @@ export async function rebuildSummaryMemory(
     ],
     {
       metadata: {
-        project: LANGSMITH_PROJECT,
+        project: resolvedProject,
         source: 'summaryMemory',
       },
     }
