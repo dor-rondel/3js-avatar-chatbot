@@ -8,8 +8,8 @@ import {
 
 const invokeMock = vi.fn();
 
-vi.mock('@langchain/google-genai', () => ({
-  ChatGoogleGenerativeAI: vi.fn(() => ({
+vi.mock('@langchain/groq', () => ({
+  ChatGroq: vi.fn(() => ({
     invoke: invokeMock,
   })),
 }));
@@ -24,13 +24,12 @@ describe('summaryMemory', () => {
     expect(getSummaryMemory()).toBeUndefined();
   });
 
-  it('stores the refreshed summary returned by Gemini', async () => {
+  it('stores the refreshed summary returned by Groq', async () => {
+    vi.stubEnv('GROQ_API_KEY', 'test-key');
     invokeMock.mockResolvedValueOnce({ content: 'New summary.' });
 
     await expect(
       rebuildSummaryMemory({
-        apiKey: 'key',
-        model: 'model',
         userMessage: 'Hello',
         assistantReply: 'Hi friend',
       })
@@ -40,18 +39,15 @@ describe('summaryMemory', () => {
   });
 
   it('injects the previously stored summary when not provided explicitly', async () => {
+    vi.stubEnv('GROQ_API_KEY', 'test-key');
     invokeMock.mockResolvedValue({ content: 'Updated summary.' });
 
     await rebuildSummaryMemory({
-      apiKey: 'key',
-      model: 'model',
       userMessage: 'Turn 1',
       assistantReply: 'Response 1',
     });
 
     await rebuildSummaryMemory({
-      apiKey: 'key',
-      model: 'model',
       userMessage: 'Turn 2',
       assistantReply: 'Response 2',
     });
@@ -64,13 +60,12 @@ describe('summaryMemory', () => {
     }
   });
 
-  it('throws when Gemini returns an empty summary', async () => {
+  it('throws when Groq returns an empty summary', async () => {
+    vi.stubEnv('GROQ_API_KEY', 'test-key');
     invokeMock.mockResolvedValueOnce({ content: '' });
 
     await expect(
       rebuildSummaryMemory({
-        apiKey: 'key',
-        model: 'model',
         userMessage: 'hello',
         assistantReply: 'world',
       })

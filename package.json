@@ -20,7 +20,8 @@
   },
   "dependencies": {
     "@langchain/core": "^0.2.36",
-    "@langchain/google-genai": "^0.1.6",
+    "@langchain/groq": "^0.0.17",
+    "@langchain/openai": "0.2.6",
     "@react-three/drei": "^9.113.0",
     "@react-three/fiber": "^9.0.0",
     "eventsource-parser": "^3.0.6",

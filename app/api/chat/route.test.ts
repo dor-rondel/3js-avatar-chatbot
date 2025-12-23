@@ -6,7 +6,7 @@ const {
   executeChatMock,
   InputSanitizationError,
   ConfigurationError,
-  GeminiResponseError,
+  GroqResponseError,
   SummaryMemoryError,
   synthesizeSpeechMock,
   ElevenLabsConfigurationError,
@@ -14,7 +14,7 @@ const {
 } = vi.hoisted(() => {
   class InputSanitizationError extends Error {}
   class ConfigurationError extends Error {}
-  class GeminiResponseError extends Error {}
+  class GroqResponseError extends Error {}
   class SummaryMemoryError extends Error {}
   class ElevenLabsConfigurationError extends Error {}
   class ElevenLabsSynthesisError extends Error {}
@@ -24,7 +24,7 @@ const {
     synthesizeSpeechMock: vi.fn(),
     InputSanitizationError,
     ConfigurationError,
-    GeminiResponseError,
+    GroqResponseError,
     SummaryMemoryError,
     ElevenLabsConfigurationError,
     ElevenLabsSynthesisError,
@@ -35,7 +35,7 @@ vi.mock('@/lib/langchain/executeChat', () => ({
   executeChat: executeChatMock,
   InputSanitizationError,
   ConfigurationError,
-  GeminiResponseError,
+  GroqResponseError,
   SummaryMemoryError,
 }));
 
@@ -51,7 +51,7 @@ describe('POST /api/chat', () => {
     synthesizeSpeechMock.mockReset();
   });
 
-  it('returns the Gemini reply when the payload is valid', async () => {
+  it('returns the Groq reply when the payload is valid', async () => {
     executeChatMock.mockResolvedValueOnce({
       reply: 'Hi there',
       sentiment: 'happy',
@@ -136,9 +136,9 @@ describe('POST /api/chat', () => {
     await expect(response.json()).resolves.toEqual({ error: 'Missing key' });
   });
 
-  it('maps Gemini response issues to 502', async () => {
+  it('maps Groq response issues to 502', async () => {
     executeChatMock.mockRejectedValueOnce(
-      new GeminiResponseError('Empty response')
+      new GroqResponseError('Empty response')
     );
 
     const response = await POST(

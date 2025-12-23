@@ -9,13 +9,13 @@ export type UserPromptInput = {
    */
   summary?: string;
   /**
-   * Format instructions describing the exact JSON contract Gemini must follow.
+   * Format instructions describing the exact JSON contract the model must follow.
    */
   formatInstructions: string;
 };
 
 /**
- * Builds the human-readable payload forwarded to Gemini.
+ * Builds the human-readable payload forwarded to the model.
  */
 export function buildUserPrompt({
   message,

@@ -1,4 +1,4 @@
-# 3D Avatar Chatbot · GeminiCLI Guide
+# 3D Avatar Chatbot · Groq Guide
 
 ## 0. System Prompt
 
@@ -11,10 +11,10 @@
 ## 1. Responsibilities & Flow
 
 - Serve a single-user chat experience: frontend issues one POST per turn, the server returns a single JSON payload that already contains the assistant text plus the synthesized ElevenLabs audio metadata needed for playback.
-- Use LangChain to call the Gemini API with structured output (`text`, `sentiment`, `visemeHints`).
-- Enforce guardrails: sanitize every inbound prompt and reject common prompt-injection attempts before invoking LangChain/Gemini.
+- Use LangChain to call the Groq API with structured output (`text`, `sentiment`, `visemeHints`).
+- Enforce guardrails: sanitize every inbound prompt and reject common prompt-injection attempts before invoking LangChain/Groq.
 - Maintain a **summary memory** object: after each user→assistant turn, rebuild a concise conversation summary (up to 10 sentences) and store it for the next prompt. This replaces full transcript storage and must be regenerated every cycle.
-- Map Gemini sentiment to avatar facial expressions and FBX animation clips rendered with React Three Fiber/Drei.
+- Map Groq sentiment to avatar facial expressions and FBX animation clips rendered with React Three Fiber/Drei.
 - Generate audio inside the chat route by calling the ElevenLabs streaming API; pipe the returned audio payload into a browser `AnalyserNode` and run [wawa-lipsync](https://github.com/wass08/wawa-lipsync) client-side to extract visemes in real time.
 - Capture LangChain traces with LangSmith even when the app runs inside Docker.
 - Ensure obvious loading states in the UI (chat input disabled, spinner overlay on the avatar) while awaiting the chat response or while the ElevenLabs audio stream initializes and the wawa-lipsync analyser warms up.
@@ -57,15 +57,15 @@ _If a folder is missing today, assume it will exist once implementation begins. 
 
 1. **Node.js 20+** and **pnpm** installed on the host machine.
 2. **Docker Desktop** (or Docker Engine) running locally with access to `docker compose`.
-3. Valid **Gemini** and **LangSmith** API keys plus project names.
+3. Valid **Groq** and **LangSmith** API keys plus project names.
 4. ElevenLabs API access (Realtime voice profile) plus browser support for Web Audio so [wawa-lipsync](https://github.com/wass08/wawa-lipsync) can execute client-side.
 5. `.env.local` (or `.env`) created from `.env.local.example` before running any scripts.
 
 ### Environment Variables (sample keys only)
 
 ```
-GEMINI_API_KEY=
-GEMINI_MODEL=gemini-2.5-flash
+GROQ_API_KEY=
+GROQ_MODEL=llama-3.3-70b-versatile
 LANGSMITH_API_KEY=
 LANGSMITH_PROJECT=
 LANGSMITH_ENDPOINT=https://api.smith.langchain.com
@@ -150,8 +150,8 @@ pnpm dev
 - Response: JSON payload delivered once per request containing the assistant text, structured metadata (sentiment, animation cues, viseme hints, summary memory updates), and the base64-encoded ElevenLabs audio + MIME type.
 - The frontend opens a brand-new POST for each user prompt, consumes the reply + audio immediately, and pipes the decoded audio stream into wawa-lipsync (via an `AnalyserNode`) to drive the avatar mouth shapes.
 - LangChain pipeline must:
-  1.  Feed Gemini both the latest user message and the current summary memory string.
-  2.  Parse Gemini's structured response to get the new assistant text and metadata.
+  1.  Feed Groq both the latest user message and the current summary memory string.
+  2.  Parse Groq's structured response to get the new assistant text and metadata.
   3.  Generate a **fresh summary** by combining the previous summary + latest exchange (use LangChain `ConversationSummaryMemory` or equivalent custom chain).
   4.  Persist only that summary (no transcript history) for the next cycle.
 
@@ -245,4 +245,4 @@ docker compose down
 
 ---
 
-By following these steps, GeminiCLI can confidently run and observe the local chatbot stack, keeping the workflow professional and aligned with the small, incremental PR strategy.
+By following these steps, you can confidently run and observe the local chatbot stack, keeping the workflow professional and aligned with the small, incremental PR strategy.

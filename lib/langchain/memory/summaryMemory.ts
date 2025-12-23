@@ -1,10 +1,10 @@
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
+import { ChatGroq } from '@langchain/groq';
 import {
   HumanMessage,
   SystemMessage,
   type AIMessage,
 } from '@langchain/core/messages';
-import { LANGSMITH_PROJECT } from '../constants';
+import { DEFAULT_GROQ_MODEL, LANGSMITH_PROJECT } from '../constants';
 import {
   buildSummarySystemPrompt,
   buildSummaryUserPrompt,
@@ -15,7 +15,7 @@ import { type SummaryUpdateInput } from '../types';
 let summaryMemory: string | undefined;
 
 /**
- * Generic error raised when Gemini cannot produce a refreshed summary.
+ * Generic error raised when the LLM cannot produce a refreshed summary.
  */
 export class SummaryMemoryError extends Error {
   constructor(message: string) {
@@ -39,21 +39,28 @@ export function resetSummaryMemory(): void {
 }
 
 /**
- * Rebuilds the rolling summary by invoking Gemini with the latest turn data.
+ * Rebuilds the rolling summary by invoking Groq with the latest turn data.
  */
 export async function rebuildSummaryMemory(
   input: SummaryUpdateInput
 ): Promise<string> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new SummaryMemoryError('GROQ_API_KEY must be configured.');
+  }
+
+  const model = process.env.GROQ_MODEL?.trim() || DEFAULT_GROQ_MODEL;
+
   const previousSummary =
     typeof input.previousSummary === 'string'
       ? input.previousSummary
       : summaryMemory;
 
-  const chat = new ChatGoogleGenerativeAI({
-    apiKey: input.apiKey,
-    model: input.model,
+  const chat = new ChatGroq({
+    apiKey,
+    model,
     temperature: 0.2,
-    maxOutputTokens: 512,
+    maxTokens: 512,
   });
 
   const response = (await chat.invoke(
@@ -77,7 +84,7 @@ export async function rebuildSummaryMemory(
 
   const refreshedSummary = extractTextContent(response);
   if (!refreshedSummary) {
-    throw new SummaryMemoryError('Gemini returned an empty summary.');
+    throw new SummaryMemoryError('Groq returned an empty summary.');
   }
 
   summaryMemory = refreshedSummary.trim();
