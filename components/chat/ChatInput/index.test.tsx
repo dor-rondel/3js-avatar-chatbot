@@ -48,4 +48,38 @@ describe('ChatInput', () => {
       expect(handleSend).toHaveBeenCalledWith('Expecto Patronum');
     });
   });
+
+  it('shows a loading spinner while sending', async () => {
+    let resolveSend: (() => void) | null = null;
+    const handleSend = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSend = resolve;
+        })
+    );
+
+    render(<ChatInput onSend={handleSend} />);
+
+    const textarea = screen.getByLabelText('Message');
+    const sendButton = screen.getByRole('button', { name: /send/i });
+
+    await act(async () => {
+      fireEvent.change(textarea, { target: { value: 'Lumos' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(sendButton);
+    });
+
+    expect(sendButton).toBeDisabled();
+    expect(screen.getByLabelText('Loading')).toBeInTheDocument();
+
+    await act(async () => {
+      resolveSend?.();
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Loading')).not.toBeInTheDocument();
+    });
+  });
 });

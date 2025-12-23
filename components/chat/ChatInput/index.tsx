@@ -52,6 +52,9 @@ export function ChatInput({ placeholder, onSend }: ChatInputProps) {
       setIsSending(true);
       await onSend(trimmed);
       setMessage('');
+    } catch {
+      // Error handling is owned by the parent (e.g., ChatPanel). We only prevent
+      // unhandled promise rejections and keep the message for retries.
     } finally {
       setIsSending(false);
     }
@@ -81,12 +84,20 @@ export function ChatInput({ placeholder, onSend }: ChatInputProps) {
         aria-label="Message"
       />
       <button
-        className="rounded-full bg-gradient-to-br from-amber-300 to-pink-400 px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-900 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+        className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-amber-300 to-pink-400 px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-900 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
         type="button"
         onClick={() => void sendMessage()}
         disabled={!message.trim() || isSending}
+        aria-busy={isSending}
       >
-        Send
+        {isSending ? (
+          <span
+            role="status"
+            aria-label="Loading"
+            className="h-3 w-3 animate-spin rounded-full border-2 border-slate-900/30 border-t-slate-900"
+          />
+        ) : null}
+        <span>Send</span>
       </button>
     </div>
   );
