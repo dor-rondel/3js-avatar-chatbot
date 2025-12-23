@@ -30,7 +30,10 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
         const { audio, sentiment } = await sendChatRequest(text);
         await playResponseAudio({ audio, sentiment });
       } catch (error) {
-        if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+        if (
+          typeof window !== 'undefined' &&
+          typeof window.alert === 'function'
+        ) {
           window.alert('Something went wrong. Please try again.');
         }
 

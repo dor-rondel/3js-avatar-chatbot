@@ -90,13 +90,13 @@ export function ChatInput({ placeholder, onSend }: ChatInputProps) {
         disabled={!message.trim() || isSending}
         aria-busy={isSending}
       >
-        {isSending ? (
+        {isSending && (
           <span
             role="status"
             aria-label="Loading"
             className="h-3 w-3 animate-spin rounded-full border-2 border-slate-900/30 border-t-slate-900"
           />
-        ) : null}
+        )}
         <span>Send</span>
       </button>
     </div>
