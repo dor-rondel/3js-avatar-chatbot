@@ -30,7 +30,7 @@ export function buildUserPrompt({
     summaryBlock,
     'Latest guest message:',
     message,
-    '\nRespond as Harry and keep the reply under 120 words.',
+    '\nRespond as Harry and keep the reply under 30 words.',
     '\nProvide your answer in the following JSON format:',
     formatInstructions,
   ].join('\n');
