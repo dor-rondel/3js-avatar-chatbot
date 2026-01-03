@@ -12,7 +12,40 @@ import {
 import { extractTextContent } from '../utils/extractTextContent';
 import { type SummaryUpdateInput } from '../types';
 
-let summaryMemory: string | undefined;
+const SESSION_TTL_MS = 60 * 60 * 1000;
+
+type SessionMemoryEntry = {
+  summary?: string;
+  expiresAt: number;
+};
+
+const sessionSummaryMemory = new Map<string, SessionMemoryEntry>();
+
+function pruneExpiredSessions(now = Date.now()): void {
+  for (const [sessionId, entry] of sessionSummaryMemory.entries()) {
+    if (entry.expiresAt <= now) {
+      sessionSummaryMemory.delete(sessionId);
+    }
+  }
+}
+
+function resolveSessionEntry(
+  sessionId: string,
+  now = Date.now()
+): SessionMemoryEntry {
+  pruneExpiredSessions(now);
+
+  const existing = sessionSummaryMemory.get(sessionId);
+  if (existing && existing.expiresAt > now) {
+    return existing;
+  }
+
+  const created: SessionMemoryEntry = {
+    expiresAt: now + SESSION_TTL_MS,
+  };
+  sessionSummaryMemory.set(sessionId, created);
+  return created;
+}
 
 /**
  * Generic error raised when the LLM cannot produce a refreshed summary.
@@ -25,21 +58,46 @@ export class SummaryMemoryError extends Error {
 }
 
 /**
- * Returns the most recent summary cached in memory, if any.
+ * Returns the most recent conversation summary cached for a given session.
+ *
+ * The cache is kept in-memory on the server and expires after one hour from the
+ * time the session entry is created. When the entry expires, this returns
+ * `undefined`.
+ *
+ * @param sessionId - Opaque, server-issued session identifier.
  */
-export function getSummaryMemory(): string | undefined {
-  return summaryMemory;
+export function getSummaryMemory(sessionId: string): string | undefined {
+  if (!sessionId) {
+    return undefined;
+  }
+
+  return resolveSessionEntry(sessionId).summary;
 }
 
 /**
- * Clears the in-memory cache. This is primarily used inside tests.
+ * Clears cached summary memory.
+ *
+ * - When `sessionId` is provided, clears only that session.
+ * - When omitted, clears all sessions (primarily used by tests).
+ *
+ * @param sessionId - Optional session identifier.
  */
-export function resetSummaryMemory(): void {
-  summaryMemory = undefined;
+export function resetSummaryMemory(sessionId?: string): void {
+  if (typeof sessionId === 'string') {
+    sessionSummaryMemory.delete(sessionId);
+    return;
+  }
+
+  sessionSummaryMemory.clear();
 }
 
 /**
  * Rebuilds the rolling summary by invoking Groq with the latest turn data.
+ *
+ * The refreshed summary is stored for the provided `sessionId` and will be
+ * evicted automatically after one hour.
+ *
+ * @param input - Turn data plus the associated session id.
  */
 export async function rebuildSummaryMemory(
   input: SummaryUpdateInput
@@ -59,10 +117,13 @@ export async function rebuildSummaryMemory(
 
   const model = process.env.GROQ_MODEL?.trim() || DEFAULT_GROQ_MODEL;
 
+  const now = Date.now();
+  const sessionEntry = resolveSessionEntry(input.sessionId, now);
+
   const previousSummary =
     typeof input.previousSummary === 'string'
       ? input.previousSummary
-      : summaryMemory;
+      : sessionEntry.summary;
 
   const chat = new ChatGroq({
     apiKey,
@@ -95,6 +156,7 @@ export async function rebuildSummaryMemory(
     throw new SummaryMemoryError('Groq returned an empty summary.');
   }
 
-  summaryMemory = refreshedSummary.trim();
-  return summaryMemory;
+  sessionEntry.summary = refreshedSummary.trim();
+  sessionSummaryMemory.set(input.sessionId, sessionEntry);
+  return sessionEntry.summary;
 }

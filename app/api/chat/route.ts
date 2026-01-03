@@ -8,6 +8,11 @@ import {
 } from '@/lib/langchain/executeChat';
 import { type ChatRequestPayload } from '@/lib/chat/types';
 import {
+  SESSION_COOKIE_MAX_AGE_SECONDS,
+  SESSION_COOKIE_NAME,
+  resolveSessionIdFromRequest,
+} from '@/lib/session/sessionCookie';
+import {
   ElevenLabsConfigurationError,
   ElevenLabsSynthesisError,
   synthesizeSpeech,
@@ -40,18 +45,35 @@ export async function POST(request: Request) {
     );
   }
 
+  const { sessionId, shouldSetCookie } = resolveSessionIdFromRequest(request);
+
   try {
     const result = await executeChat({
+      sessionId,
       message: payload.message,
     });
 
     const audio = await synthesizeSpeech({ text: result.reply });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       reply: result.reply,
       sentiment: result.sentiment,
       audio,
     });
+
+    if (shouldSetCookie) {
+      response.cookies.set({
+        name: SESSION_COOKIE_NAME,
+        value: sessionId,
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        maxAge: SESSION_COOKIE_MAX_AGE_SECONDS,
+      });
+    }
+
+    return response;
   } catch (error) {
     if (error instanceof InputSanitizationError) {
       return NextResponse.json({ error: error.message }, { status: 400 });

@@ -13,7 +13,8 @@
 - Serve a single-user chat experience: frontend issues one POST per turn, the server returns a single JSON payload that already contains the assistant text plus the synthesized ElevenLabs audio metadata needed for playback.
 - Use LangChain to call the Groq API with structured output (`text`, `sentiment`, `visemeHints`).
 - Enforce guardrails: sanitize every inbound prompt and reject common prompt-injection attempts before invoking LangChain/Groq.
-- Maintain a **summary memory** object: after each user→assistant turn, rebuild a concise conversation summary (up to 10 sentences) and store it for the next prompt. This replaces full transcript storage and must be regenerated every cycle.
+- Maintain a **summary memory** object **per browser session**: after each user→assistant turn, rebuild a concise conversation summary (up to 10 sentences) and store it for the next prompt. This replaces full transcript storage and must be regenerated every cycle.
+- Session identification is cookie-based (no authentication). The server issues an `httpOnly` session cookie and uses it as the key for summary memory isolation. Session summaries expire after 1 hour.
 - Map Groq sentiment to avatar facial expressions and FBX animation clips rendered with React Three Fiber/Drei.
 - Generate audio inside the chat route by calling the ElevenLabs streaming API; pipe the returned audio payload into a browser `AnalyserNode` and run [wawa-lipsync](https://github.com/wass08/wawa-lipsync) client-side to extract visemes in real time.
 - Capture LangChain traces with LangSmith even when the app runs inside Docker.
@@ -33,6 +34,7 @@
 /lib/langchain/memory/       # In-memory summary cache per session
 /lib/voice/                  # ElevenLabs integration helpers
 /lib/audio/                  # Client-side audio utilities (base64 decode/src, playback helpers)
+/lib/session/                # Session cookie helpers (parse/validate/resolve session ids)
 /components/scene/           # React Three Fiber scene + controls (component-per-folder)
 /components/chat/            # Chat UI components (component-per-folder)
 /app/globals.css             # Global styles/theme tokens
