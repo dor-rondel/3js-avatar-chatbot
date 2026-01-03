@@ -62,12 +62,17 @@ const chatResponseParser =
  * @returns Assistant reply text and sentiment label.
  */
 export async function executeChat({
+  sessionId,
   message,
   summary,
 }: ExecuteChatInput): Promise<ExecuteChatResult> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     throw new ConfigurationError('GROQ_API_KEY must be configured.');
+  }
+
+  if (!sessionId || sessionId.trim().length === 0) {
+    throw new ConfigurationError('Session id must be configured.');
   }
 
   const resolvedProject = resolveLangSmithProject();
@@ -80,7 +85,7 @@ export async function executeChat({
 
   const sanitizedMessage = sanitizeUserMessage(message);
   const model = resolveGroqModel();
-  const summaryContext = summary ?? getSummaryMemory();
+  const summaryContext = summary ?? getSummaryMemory(sessionId);
 
   const chat = new ChatGroq({
     apiKey,
@@ -121,6 +126,7 @@ export async function executeChat({
   }
 
   await rebuildSummaryMemory({
+    sessionId,
     userMessage: sanitizedMessage,
     assistantReply: parsed.text,
     previousSummary: summaryContext,

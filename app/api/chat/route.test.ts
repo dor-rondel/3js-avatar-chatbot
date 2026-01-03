@@ -68,12 +68,52 @@ describe('POST /api/chat', () => {
       })
     );
 
+    expect(executeChatMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId: expect.any(String),
+        message: 'Hello!',
+      })
+    );
+
+    expect(response.headers.get('set-cookie')).toContain('harry_session=');
+
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
       reply: 'Hi there',
       sentiment: 'happy',
       audio: { base64: 'abc', mimeType: 'audio/mpeg' },
     });
+  });
+
+  it('reuses an existing session cookie when present', async () => {
+    const sessionId = '123e4567-e89b-12d3-a456-426614174000';
+
+    executeChatMock.mockResolvedValueOnce({
+      reply: 'Hi there',
+      sentiment: 'happy',
+    });
+    synthesizeSpeechMock.mockResolvedValueOnce({
+      base64: 'abc',
+      mimeType: 'audio/mpeg',
+    });
+
+    const response = await POST(
+      new Request('http://localhost/api/chat', {
+        method: 'POST',
+        headers: {
+          cookie: `harry_session=${sessionId}`,
+        },
+        body: JSON.stringify({ message: 'Hello!' }),
+      })
+    );
+
+    expect(executeChatMock).toHaveBeenCalledWith({
+      sessionId,
+      message: 'Hello!',
+    });
+
+    expect(response.headers.get('set-cookie')).toBeNull();
+    expect(response.status).toBe(200);
   });
 
   it('rejects malformed JSON payloads', async () => {

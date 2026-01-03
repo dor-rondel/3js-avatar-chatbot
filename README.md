@@ -4,10 +4,12 @@
 
 A Harry Potter–themed conversational agent that renders a fully animated 3D avatar in the browser using React Three Fiber. Users submit a prompt once per turn, the backend returns a single JSON payload for that turn, and the avatar mirrors the assistant’s sentiment with facial expressions, FBX animations, and ElevenLabs streaming audio whose visemes are derived in-browser via the wawa-lipsync Web Audio pipeline. The experience targets a single user at a time, emphasizing cinematic presentation, observability, and professional engineering practices.
 
+The server keeps a short-lived conversation summary **per browser session** using an `httpOnly` cookie (`harry_session`). The summary is stored in-memory on the server and expires after 1 hour. In production (`NODE_ENV=production`) the cookie is set with `Secure`, meaning it will only be sent over HTTPS.
+
 ## Features
 
 - Cinematic 3D avatar with zoom controls, sentiment-driven facial blends, and FBX idle/talking loops.
-- LangChain pipeline that calls Groq for structured outputs (text, sentiment, viseme hints) with short-lived memory.
+- LangChain pipeline that calls Groq for structured outputs (text, sentiment, viseme hints) with short-lived, per-session summary memory.
 - Guardrail layer that sanitizes prompts and blocks common prompt-injection attempts before invoking Groq.
 - ElevenLabs streaming route handler plus a client-side [wawa-lipsync](https://github.com/wass08/wawa-lipsync) harness that taps a browser `AnalyserNode` for real-time viseme cues.
 - Low-latency chat endpoint that returns the full assistant turn plus a base64 ElevenLabs audio payload for each POST, allowing the browser to kick off playback and wawa-lipsync without SSE token streams.
