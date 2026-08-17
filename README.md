@@ -43,7 +43,7 @@ The server keeps a short-lived conversation summary **per browser session** usin
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/3js-avatar-chatbot.git
+   git clone https://github.com/dor-rondel/3js-avatar-chatbot.git
    ```
 2. Change into the project directory:
    ```bash
@@ -115,7 +115,7 @@ To publish the image yourself from a local machine:
 echo $GHCR_PAT | docker login ghcr.io -u <github-username> --password-stdin
 
 # 2. Build the production image
-IMAGE=ghcr.io/<github-username>/3js-avatar-chatbot:$(git rev-parse --short HEAD)
+IMAGE=ghcr.io/dor-rondel/3js-avatar-chatbot:$(git rev-parse --short HEAD)
 docker build -t "$IMAGE" .
 
 # 3. Push it to the registry
@@ -125,7 +125,7 @@ docker push "$IMAGE"
 Use a classic personal access token with the `write:packages` scope (`GHCR_PAT` above) or reuse the same token the CI job uses. Any consumer (local machine, container platform, Railway) can then pull the image with:
 
 ```bash
-docker pull ghcr.io/<github-username>/3js-avatar-chatbot:latest
+docker pull ghcr.io/dor-rondel/3js-avatar-chatbot:latest
 ```
 
 ## Available Scripts
