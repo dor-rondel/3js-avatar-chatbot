@@ -58,6 +58,17 @@ export function ChatPanel(sectionProps: ChatPanelProps = {}) {
         </h2>
       </header>
       <ChatInput placeholder="Ask Harry anything…" onSend={handleSend} />
+      <p className="mt-4 text-center text-[11px] text-white/40">
+        Check out{' '}
+        <a
+          href="https://portori.cc"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-amber-300/60 underline-offset-2 transition hover:text-amber-300 hover:underline"
+        >
+          PorTori
+        </a>
+      </p>
     </section>
   );
 }
