@@ -147,3 +147,4 @@ docker pull ghcr.io/dor-rondel/3js-avatar-chatbot:latest
 - `lib/*`: Shared non-UI helpers (LangChain pipeline, audio helpers, viseme/expression event emitters).
 
 For a full project playbook (Docker, chat/voice expectations, testing standards), see [.gemini/GEMINI.md](.gemini/GEMINI.md).
+Alternative live URL: https://portori.cc or [portori](https://www.portori.cc)
